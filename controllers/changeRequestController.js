@@ -13,9 +13,9 @@ const createRequest = (req, res) => {
     request_change_date,
     global_team_contact = [], // Default value
     business_team_contact = [], // Default value
-    description = "No description provided", // Default value
-    test_plan = "No test plan provided", // Default value
-    rollback_plan = "No rollback plan provided", // Default value
+    description = "None", // Default value
+    test_plan = "None", // Default value
+    rollback_plan = "None", // Default value
     time_of_change = 0, // Default value
     achieve_2_week_change_request = false, // Default value
     approval = false, // Default value
