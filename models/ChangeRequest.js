@@ -62,7 +62,7 @@ const createChangeRequestTable = () => {
 
 
   `;
-  db.query(sql, (err, result) => {
+  db.query(createChangeRequestTable, (err, result) => {
     if (err) {
       console.error("❌ Error creating ChangeRequest table:", err);
     } else {
@@ -71,7 +71,4 @@ const createChangeRequestTable = () => {
   });
 };
 
-// Run table creation
-createChangeRequestTable();
-
-module.exports = db;
+module.exports = {createChangeRequestTable};

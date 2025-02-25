@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./config/db");
 const changeRequestRoutes = require("./routes/changeRequestRoutes");
+const businessCalendarRoutes = require("./routes/businessCalendarRoutes");
 
 const app = express();
 app.use(cors({
@@ -13,7 +14,11 @@ app.use(cors({
 app.use(express.json()); // Middleware for parsing JSON
 
 // Routes
+// change request
 app.use("/api/change-requests", changeRequestRoutes);
+
+// business calendar
+app.use("/api/business-calendar", businessCalendarRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
