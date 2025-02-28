@@ -4,6 +4,7 @@ const cors = require("cors");
 const db = require("./config/db");
 const changeRequestRoutes = require("./routes/changeRequestRoutes");
 const businessCalendarRoutes = require("./routes/businessCalendarRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 app.use(cors({
@@ -14,6 +15,8 @@ app.use(cors({
 app.use(express.json()); // Middleware for parsing JSON
 
 // Routes
+// users
+app.use("/api/users", userRoutes)
 // change request
 app.use("/api/change-requests", changeRequestRoutes);
 
