@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 // Create a new change request
-const createRequest = (req, res) => {
+const createRequest = async (req, res) => {
   const {
     category,
     reason,
@@ -71,54 +71,61 @@ const createRequest = (req, res) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(sql, [
-    category,
-    reason,
-    impact,
-    priority,
-    change_name,
-    JSON.stringify(change_sites),
-    common_change,
-    request_change_date,
-    time_of_change,
-    achieve_2_week_change_request,
-    JSON.stringify(global_team_contact), // Ensure this is a JSON string
-    JSON.stringify(business_team_contact), // Ensure this is a JSON string
-    description,
-    test_plan,
-    rollback_plan,
-    approval,
-    change_status,
-    cancel_change_reason,
-    ftm_schedule_change,
-    aat_schedule_change,
-    fsst_schedule_change,
-    JSON.stringify(ftm_it_contact),
-    JSON.stringify(aat_it_contact),
-    JSON.stringify(fsst_it_contact),
-    ftm_crq,
-    aat_crq,
-    fsst_crq,
-    common_crq
-  ], (err, result) => {
-    if (err) {
-      console.error("❌ Error inserting data:", err);
-      res.status(500).json({ error: "Database error", details: err.message });
-    } else {
-      res.status(201).json({ message: "✅ Change Request added successfully!" });
-    }
-  });
+  try {
+    // Execute the query using mysql2's promise-based API
+    await db.promise().query(sql, [
+      category,
+      reason,
+      impact,
+      priority,
+      change_name,
+      JSON.stringify(change_sites),
+      common_change,
+      request_change_date,
+      time_of_change,
+      achieve_2_week_change_request,
+      JSON.stringify(global_team_contact), // Ensure this is a JSON string
+      JSON.stringify(business_team_contact), // Ensure this is a JSON string
+      description,
+      test_plan,
+      rollback_plan,
+      approval,
+      change_status,
+      cancel_change_reason,
+      ftm_schedule_change,
+      aat_schedule_change,
+      fsst_schedule_change,
+      JSON.stringify(ftm_it_contact),
+      JSON.stringify(aat_it_contact),
+      JSON.stringify(fsst_it_contact),
+      ftm_crq,
+      aat_crq,
+      fsst_crq,
+      common_crq
+    ]);
+
+    // Success response
+    res.status(201).json({ message: "✅ Change Request added successfully!" });
+  } catch (err) {
+    console.error("❌ Error inserting data:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
 };
+
 // Get all change requests
-const getRequests = (req, res) => {
+const getRequests = async (req, res) => {
   const sql = "SELECT * FROM ChangeRequest";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("❌ Error fetching ChangeRequests:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+
+  try {
+    // Execute the query using mysql2's promise-based API
+    const [results] = await db.promise().query(sql);
+
+    // Success response
     res.json(results);
-  });
+  } catch (err) {
+    console.error("❌ Error fetching ChangeRequests:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
 };
 
 module.exports = { createRequest, getRequests };

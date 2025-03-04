@@ -85,8 +85,11 @@ const createUsersTableQuery = `
     name VARCHAR(60) NOT NULL,
     password VARCHAR(255) NOT NULL,
     site VARCHAR(10) NOT NULL,
+    accessToken TEXT DEFAULT NULL,
+    refreshToken TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
+);
+
 `;
 
 // Execute table creation queries using Promises
