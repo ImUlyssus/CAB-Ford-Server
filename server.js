@@ -20,15 +20,8 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies (if needed)
   }));
-// // Handle options credentials check - before CORS!
-// // and fetch cookies credentials requirement
-// app.use(credentials);
-
-// // Cross Origin Resource Sharing
-// app.use(cors(corsOptions));
 
 // // built-in middleware to handle urlencoded form data
-// app.use(express.urlencoded({ extended: false }));
 app.use(express.json()); // Middleware for parsing JSON
 app.use(cookieParser());
 // Routes
@@ -36,12 +29,11 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes)
 app.use("/api/login", authRoutes)
 app.use('/api/refresh', tokenRefreshRoutes);
+app.use('/api/logout', tokenRefreshRoutes);
 
 app.use(verifyJWT);
 // everything under verify JWT must be authenticated to get access
 
-// login
-// app.use("api/login", loginRoutes)
 // change request
 app.use("/api/change-requests", changeRequestRoutes);
 
