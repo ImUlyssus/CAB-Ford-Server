@@ -12,7 +12,24 @@ const getCalendar = async (req, res) => {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-  const defaultValue = "0".repeat(32); // 32 zeros
+
+  // Function to generate a default value string with 31 zeros.
+  const generateDefaultValue = (year, monthIndex) => {
+    let days = "0".repeat(31).split("");  // Create an array of 31 zeros
+
+    // Replace zeros with ones for weekends
+    for (let day = 1; day <= 31; day++) {
+      const date = new Date(year, monthIndex, day);
+      // Check if the date is valid and if it's a weekend (Saturday or Sunday)
+      if (date.getMonth() === monthIndex) {
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        if (isWeekend) {
+          days[day - 1] = "1";  // Replace 0 with 1 for weekends
+        }
+      }
+    }
+    return days.join("");
+  };
 
   // Function to check for missing months and insert them if needed.
   const checkAndInsertYear = async (year) => {
@@ -30,7 +47,10 @@ const getCalendar = async (req, res) => {
 
       if (missingMonths.length > 0) {
         // Build array of records to insert.
-        const records = missingMonths.map((m) => [year, m, defaultValue, defaultValue, defaultValue]);
+        const records = missingMonths.map((m, index) => {
+          const defaultValue = generateDefaultValue(year, index);  // Generate default value with weekends
+          return [year, m, defaultValue, defaultValue, defaultValue];
+        });
 
         // Insert missing months.
         await db.promise().query(
@@ -48,7 +68,6 @@ const getCalendar = async (req, res) => {
     await Promise.all(yearsToCheck.map((year) => checkAndInsertYear(year)));
 
     // After ensuring the records exist, retrieve data for the three years.
-    // The ORDER BY clause uses FIELD to order months in calendar order.
     const [results] = await db.promise().query(
       `SELECT * FROM BusinessCalendar 
        WHERE year IN (?) 

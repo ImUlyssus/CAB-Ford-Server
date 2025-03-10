@@ -35,7 +35,7 @@ const createBusinessCalendarTableQuery = `
   );
 `;
 
-// Table creation query for ChangeRequest
+// Updated Table creation query for ChangeRequest
 const createChangeRequestTableQuery = `
   CREATE TABLE IF NOT EXISTS ChangeRequest (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,40 +43,42 @@ const createChangeRequestTableQuery = `
     reason ENUM('Fix/Repair', 'New functionality', 'Maintenance', 'Upgrade', 'Tech refresh', 'Yearly change') NOT NULL,
     impact ENUM('Extensive', 'Significant', 'Moderate', 'Minor') NOT NULL,
     priority ENUM('Critical', 'High', 'Medium', 'Low') NOT NULL,
-    change_name VARCHAR(255) NOT NULL,
-    change_sites JSON NOT NULL,
+    change_name VARCHAR(1000) NOT NULL,
+    change_sites VARCHAR(30) NOT NULL,
     common_change BOOLEAN NOT NULL DEFAULT FALSE,
-    request_change_date DATE NOT NULL,
-    time_of_change INT NOT NULL,
+    request_change_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    duration_of_change FLOAT NOT NULL,
     achieve_2_week_change_request BOOLEAN DEFAULT FALSE,
-    ftm_schedule_change DATE DEFAULT NULL,
-    aat_schedule_change DATE DEFAULT NULL,
-    fsst_schedule_change DATE DEFAULT NULL,
-    ftm_it_contact JSON DEFAULT NULL,
-    aat_it_contact JSON DEFAULT NULL,
-    fsst_it_contact JSON DEFAULT NULL,
-    global_team_contact JSON NOT NULL,
-    business_team_contact JSON NOT NULL,
-    ftm_crq VARCHAR(255) DEFAULT NULL,
-    aat_crq VARCHAR(255) DEFAULT NULL,
-    fsst_crq VARCHAR(255) DEFAULT NULL,
-    common_crq VARCHAR(255) DEFAULT NULL,
-    approval BOOLEAN DEFAULT FALSE,
+    ftm_schedule_change VARCHAR(390) DEFAULT NULL,
+    aat_schedule_change VARCHAR(390) DEFAULT NULL,
+    fsst_schedule_change VARCHAR(390) DEFAULT NULL,
+    ftm_it_contact VARCHAR(140) DEFAULT NULL,
+    aat_it_contact VARCHAR(140) DEFAULT NULL,
+    fsst_it_contact VARCHAR(140) DEFAULT NULL,
+    global_team_contact VARCHAR(190) NOT NULL,
+    business_team_contact VARCHAR(190) NOT NULL,
+    ftm_crq VARCHAR(170) DEFAULT NULL,
+    aat_crq VARCHAR(170) DEFAULT NULL,
+    fsst_crq VARCHAR(170) DEFAULT NULL,
+    approval ENUM('YES', 'NO', 'Waiting') DEFAULT 'Waiting',
     change_status ENUM(
       'Completed with no issue',
-      'Cancel Change Request',
+      'Cancel change request',
       'FTM change cancel',
       'AAT change cancel',
       'FSST change cancel',
       'Common change cancel'
     ) DEFAULT NULL,
-    cancel_change_reason TEXT DEFAULT NULL,
-    description TEXT NOT NULL,
-    test_plan TEXT NOT NULL,
-    rollback_plan TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    cancel_change_reason VARCHAR(1000) DEFAULT NULL,
+    reschedule_reason VARCHAR(1000) DEFAULT NULL,
+    lesson_learnt VARCHAR(1000) DEFAULT NULL,
+    description VARCHAR(1000) NOT NULL,
+    test_plan VARCHAR(1000) NOT NULL,
+    rollback_plan VARCHAR(1000) NOT NULL,
+    is_someone_updating VARCHAR(50) NOT NULL
   );
 `;
+
 
 // Table creation query for Users
 const createUsersTableQuery = `

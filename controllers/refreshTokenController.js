@@ -12,7 +12,6 @@ const handleRefreshToken = async (req, res) => {
             [refreshToken]
         );
         const foundUser = rows[0];
-        console.log("I am from refreshtoken: ", foundUser)
         if (!foundUser) return res.sendStatus(403);  // Forbidden if no user found
 
         // Verify refresh token
