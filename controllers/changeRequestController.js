@@ -11,103 +11,105 @@ const createRequest = async (req, res) => {
     change_sites,
     common_change,
     request_change_date,
-    global_team_contact = [], // Default value
-    business_team_contact = [], // Default value
-    description = "None", // Default value
-    test_plan = "None", // Default value
-    rollback_plan = "None", // Default value
-    time_of_change = 0, // Default value
-    achieve_2_week_change_request = false, // Default value
-    approval = false, // Default value
-    change_status = null, // Default value
-    cancel_change_reason = null, // Default value
-    ftm_schedule_change = null, // Default value
-    aat_schedule_change = null, // Default value
-    fsst_schedule_change = null, // Default value
-    ftm_it_contact = null, // Default value
-    aat_it_contact = null, // Default value
-    fsst_it_contact = null, // Default value
-    ftm_crq = null, // Default value
-    aat_crq = null, // Default value
-    fsst_crq = null, // Default value
-    common_crq = null // Default value
+    global_team_contact = "", // Store as comma-separated values
+    business_team_contact = "", // Store as comma-separated values
+    description = null,
+    test_plan = null,
+    rollback_plan = null,
+    achieve_2_week_change_request = false,
+    approval = "Waiting", // Default to 'Waiting' (per schema)
+    change_status = null,
+    cancel_change_reason = null,
+    reschedule_reason = null, // New field
+    lesson_learnt = null, // New field
+    ftm_schedule_change = null,
+    aat_schedule_change = null,
+    fsst_schedule_change = null,
+    ftm_it_contact = "", // Store as comma-separated values
+    aat_it_contact = "", // Store as comma-separated values
+    fsst_it_contact = "", // Store as comma-separated values
+    ftm_crq = null,
+    aat_crq = null,
+    fsst_crq = null,
+    is_someone_updating = null, // New field
   } = req.body;
 
-  // Validate incoming data
-  if (!category || !reason || !impact || !priority || !change_name || !change_sites || typeof common_change !== 'boolean' || !request_change_date) {
-    return res.status(400).json({ error: "❌ All fields are required, including request_change_date." });
+  // Validate required fields
+  if (!category || !reason || !impact || !priority || !change_name || !change_sites || typeof common_change !== "boolean" || !request_change_date) {
+    return res.status(400).json({ error: "❌ All required fields must be filled." });
   }
 
   const sql = `
-    INSERT INTO ChangeRequest (
-      category,
-      reason,
-      impact,
-      priority,
-      change_name,
-      change_sites,
-      common_change,
-      request_change_date,
-      time_of_change,
-      achieve_2_week_change_request,
-      global_team_contact,
-      business_team_contact,
-      description,
-      test_plan,
-      rollback_plan,
-      approval,
-      change_status,
-      cancel_change_reason,
-      ftm_schedule_change,
-      aat_schedule_change,
-      fsst_schedule_change,
-      ftm_it_contact,
-      aat_it_contact,
-      fsst_it_contact,
-      ftm_crq,
-      aat_crq,
-      fsst_crq,
-      common_crq
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  INSERT INTO ChangeRequest (
+    category,
+    reason,
+    impact,
+    priority,
+    change_name,
+    change_sites,
+    common_change,
+    request_change_date,
+    achieve_2_week_change_request,
+    global_team_contact,
+    business_team_contact,
+    description,
+    test_plan,
+    rollback_plan,
+    approval,
+    change_status,
+    cancel_change_reason,
+    reschedule_reason,
+    lesson_learnt,
+    ftm_schedule_change,
+    aat_schedule_change,
+    fsst_schedule_change,
+    ftm_it_contact,
+    aat_it_contact,
+    fsst_it_contact,
+    ftm_crq,
+    aat_crq,
+    fsst_crq,
+    is_someone_updating
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
 
-  try {
-    // Execute the query using mysql2's promise-based API
-    await db.promise().query(sql, [
-      category,
-      reason,
-      impact,
-      priority,
-      change_name,
-      JSON.stringify(change_sites),
-      common_change,
-      request_change_date,
-      time_of_change,
-      achieve_2_week_change_request,
-      JSON.stringify(global_team_contact), // Ensure this is a JSON string
-      JSON.stringify(business_team_contact), // Ensure this is a JSON string
-      description,
-      test_plan,
-      rollback_plan,
-      approval,
-      change_status,
-      cancel_change_reason,
-      ftm_schedule_change,
-      aat_schedule_change,
-      fsst_schedule_change,
-      JSON.stringify(ftm_it_contact),
-      JSON.stringify(aat_it_contact),
-      JSON.stringify(fsst_it_contact),
-      ftm_crq,
-      aat_crq,
-      fsst_crq,
-      common_crq
-    ]);
+try {
+  await db.promise().query(sql, [
+    category,
+    reason,
+    impact,
+    priority,
+    change_name,
+    change_sites,
+    common_change,
+    request_change_date,
+    achieve_2_week_change_request,
+    global_team_contact,
+    business_team_contact,
+    description,
+    test_plan,
+    rollback_plan,
+    approval,
+    change_status,
+    cancel_change_reason,
+    reschedule_reason,
+    lesson_learnt,
+    JSON.stringify(ftm_schedule_change), // Convert arrays or objects to JSON
+    JSON.stringify(aat_schedule_change),
+    JSON.stringify(fsst_schedule_change),
+    ftm_it_contact,
+    aat_it_contact,
+    fsst_it_contact,
+    ftm_crq,
+    aat_crq,
+    fsst_crq,
+    is_someone_updating,
+  ]);
 
-    // Success response
-    res.status(201).json({ message: "✅ Change Request added successfully!" });
+
+    res.status(201).json({ message: "✅ Change Request successfully added!" });
   } catch (err) {
-    console.error("❌ Error inserting data:", err);
+    console.error("❌ Database error:", err);
     res.status(500).json({ error: "Database error", details: err.message });
   }
 };
