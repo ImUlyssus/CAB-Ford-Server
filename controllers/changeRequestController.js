@@ -11,34 +11,34 @@ const createRequest = async (req, res) => {
     change_sites,
     common_change,
     request_change_date,
-    global_team_contact = "", // Store as comma-separated values
-    business_team_contact = "", // Store as comma-separated values
+    global_team_contact, // Store as comma-separated values
+    business_team_contact, // Store as comma-separated values
     description = null,
     test_plan = null,
     rollback_plan = null,
-    achieve_2_week_change_request = false,
+    achieve_2_week_change_request,
     approval = "Waiting", // Default to 'Waiting' (per schema)
-    change_status = null,
-    cancel_change_reason = null,
-    reschedule_reason = null, // New field
-    lesson_learnt = null, // New field
-    ftm_schedule_change = null,
-    aat_schedule_change = null,
-    fsst_schedule_change = null,
-    ftm_it_contact = "", // Store as comma-separated values
-    aat_it_contact = "", // Store as comma-separated values
-    fsst_it_contact = "", // Store as comma-separated values
-    ftm_crq = null,
-    aat_crq = null,
-    fsst_crq = null,
-    is_someone_updating = null, // New field
+    change_status,
+    cancel_change_reason,
+    reschedule_reason, // New field
+    lesson_learnt, // New field
+    ftm_schedule_change,
+    aat_schedule_change,
+    fsst_schedule_change,
+    ftm_it_contact, // Store as comma-separated values
+    aat_it_contact, // Store as comma-separated values
+    fsst_it_contact, // Store as comma-separated values
+    ftm_crq,
+    aat_crq,
+    fsst_crq,
+    is_someone_updating = '', // New field
   } = req.body;
 
   // Validate required fields
   if (!category || !reason || !impact || !priority || !change_name || !change_sites || typeof common_change !== "boolean" || !request_change_date) {
     return res.status(400).json({ error: "❌ All required fields must be filled." });
   }
-
+  console.log(achieve_2_week_change_request);
   const sql = `
   INSERT INTO ChangeRequest (
     category,
@@ -84,26 +84,26 @@ try {
     common_change,
     request_change_date,
     achieve_2_week_change_request,
-    global_team_contact,
-    business_team_contact,
-    description,
-    test_plan,
-    rollback_plan,
+    (typeof global_team_contact === 'string' && global_team_contact.trim() !== "") ? global_team_contact : null, // FIX: Check if string
+    (typeof business_team_contact === 'string' && business_team_contact.trim() !== "") ? business_team_contact : null, // FIX: Check if string
+    description || null,
+    test_plan || null,
+    rollback_plan || null,
     approval,
-    change_status,
-    cancel_change_reason,
-    reschedule_reason,
-    lesson_learnt,
-    JSON.stringify(ftm_schedule_change), // Convert arrays or objects to JSON
-    JSON.stringify(aat_schedule_change),
-    JSON.stringify(fsst_schedule_change),
-    ftm_it_contact,
-    aat_it_contact,
-    fsst_it_contact,
-    ftm_crq,
-    aat_crq,
-    fsst_crq,
-    is_someone_updating,
+    change_status || null,
+    cancel_change_reason || null,
+    reschedule_reason || null,
+    lesson_learnt || null,
+    ftm_schedule_change ? JSON.stringify(ftm_schedule_change) : null, 
+    aat_schedule_change ? JSON.stringify(aat_schedule_change) : null,
+    fsst_schedule_change ? JSON.stringify(fsst_schedule_change) : null,
+    (typeof ftm_it_contact === 'string' && ftm_it_contact.trim() !== "") ? ftm_it_contact : null, // FIX: Check if string
+    (typeof aat_it_contact === 'string' && aat_it_contact.trim() !== "") ? aat_it_contact : null, // FIX: Check if string
+    (typeof fsst_it_contact === 'string' && fsst_it_contact.trim() !== "") ? fsst_it_contact : null, // FIX: Check if string
+    (typeof ftm_crq === 'string' && ftm_crq.trim() !== "") ? ftm_crq : null, // FIX: Check if string
+    (typeof aat_crq === 'string' && aat_crq.trim() !== "") ? aat_crq : null, // FIX: Check if string
+    (typeof fsst_crq === 'string' && fsst_crq.trim() !== "") ? fsst_crq : null, // FIX: Check if string
+    is_someone_updating || null
   ]);
 
 
