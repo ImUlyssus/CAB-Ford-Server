@@ -74,7 +74,8 @@ const createChangeRequestTableQuery = `
     description VARCHAR(1500) DEFAULT NULL,
     test_plan VARCHAR(1500) DEFAULT NULL,
     rollback_plan VARCHAR(1500) DEFAULT NULL,
-    is_someone_updating VARCHAR(50) DEFAULT NULL
+    is_someone_updating VARCHAR(50) DEFAULT NULL,
+    cancel_change_category ENUM('Reason 1','Reason 2','Reason 3') DEFAULT NULL
   );
 `;
 

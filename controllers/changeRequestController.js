@@ -38,7 +38,6 @@ const createRequest = async (req, res) => {
   if (!category || !reason || !impact || !priority || !change_name || !change_sites || typeof common_change !== "boolean" || !request_change_date) {
     return res.status(400).json({ error: "❌ All required fields must be filled." });
   }
-  console.log(achieve_2_week_change_request);
   const sql = `
   INSERT INTO ChangeRequest (
     category,
