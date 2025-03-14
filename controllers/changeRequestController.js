@@ -132,6 +132,7 @@ const getRequests = async (req, res) => {
 // Create a new change request
 const updateRequest = async (req, res) => {
   const {
+    id,
     category,
     reason,
     impact,
@@ -146,7 +147,7 @@ const updateRequest = async (req, res) => {
     test_plan = null,
     rollback_plan = null,
     achieve_2_week_change_request,
-    approval = "Waiting", // Default to 'Waiting' (per schema)
+    approval, // Default to 'Waiting' (per schema)
     change_status,
     cancel_change_reason,
     reschedule_reason, // New field
@@ -161,48 +162,32 @@ const updateRequest = async (req, res) => {
     aat_crq,
     fsst_crq,
     is_someone_updating = '', // New field
+    cancel_change_category
   } = req.body;
-
+  // Validate that ID is provided
+  if (!id) {
+    return res.status(400).json({ error: "❌ Request ID is required for updating." });
+  }
   // Validate required fields
   if (!category || !reason || !impact || !priority || !change_name || !change_sites || typeof common_change !== "boolean" || !request_change_date) {
     return res.status(400).json({ error: "❌ All required fields must be filled." });
   }
   const sql = `
-  INSERT INTO ChangeRequest (
-    category,
-    reason,
-    impact,
-    priority,
-    change_name,
-    change_sites,
-    common_change,
-    request_change_date,
-    achieve_2_week_change_request,
-    global_team_contact,
-    business_team_contact,
-    description,
-    test_plan,
-    rollback_plan,
-    approval,
-    change_status,
-    cancel_change_reason,
-    reschedule_reason,
-    lesson_learnt,
-    ftm_schedule_change,
-    aat_schedule_change,
-    fsst_schedule_change,
-    ftm_it_contact,
-    aat_it_contact,
-    fsst_it_contact,
-    ftm_crq,
-    aat_crq,
-    fsst_crq,
-    is_someone_updating
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
+    UPDATE ChangeRequest
+    SET 
+      category = ?, reason = ?, impact = ?, priority = ?, change_name = ?, change_sites = ?, 
+      common_change = ?, request_change_date = ?, achieve_2_week_change_request = ?, 
+      global_team_contact = ?, business_team_contact = ?, description = ?, test_plan = ?, 
+      rollback_plan = ?, approval = ?, change_status = ?, cancel_change_reason = ?, 
+      reschedule_reason = ?, lesson_learnt = ?, ftm_schedule_change = ?, aat_schedule_change = ?, 
+      fsst_schedule_change = ?, ftm_it_contact = ?, aat_it_contact = ?, fsst_it_contact = ?, 
+      ftm_crq = ?, aat_crq = ?, fsst_crq = ?, is_someone_updating = ?,
+      cancel_change_category = ?
+    WHERE id = ?
+  `;
 
 try {
-  await db.promise().query(sql, [
+  const [result] = await db.promise().query(sql, [
     category,
     reason,
     impact,
@@ -231,11 +216,15 @@ try {
     (typeof ftm_crq === 'string' && ftm_crq.trim() !== "") ? ftm_crq : null, // FIX: Check if string
     (typeof aat_crq === 'string' && aat_crq.trim() !== "") ? aat_crq : null, // FIX: Check if string
     (typeof fsst_crq === 'string' && fsst_crq.trim() !== "") ? fsst_crq : null, // FIX: Check if string
-    is_someone_updating || null
+    is_someone_updating || null,
+    cancel_change_category,
+    id
   ]);
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ error: "❌ Change Request not found." });
+  }
 
-
-    res.status(201).json({ message: "✅ Change Request successfully added!" });
+  res.status(200).json({ message: "✅ Change Request successfully updated!" });
   } catch (err) {
     console.error("❌ Database error:", err);
     res.status(500).json({ error: "Database error", details: err.message });
