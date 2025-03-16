@@ -231,4 +231,25 @@ try {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest };
+const deleteRequest = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+      return res.status(400).json({ error: "❌ Request ID is required for deletion." });
+  }
+
+  try {
+      const sql = `DELETE FROM ChangeRequest WHERE id = ?`;
+      const [result] = await db.promise().query(sql, [id]);
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "❌ Change Request not found." });
+      }
+
+      res.status(200).json({ message: "✅ Change Request deleted successfully." });
+  } catch (err) {
+      console.error("❌ Database error:", err);
+      res.status(500).json({ error: "Database error", details: err.message });
+  }
+};
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest };
