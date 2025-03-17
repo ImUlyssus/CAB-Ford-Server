@@ -283,6 +283,87 @@ const getRequestsForChosenYear = async (req, res) => {
     res.status(500).json({ error: "Database error", details: err.message });
   }
 };
+const getWeeklyData = async (req, res) => {
+  const weeks = [];
+  const today = new Date();
+
+  // Step 1: Find the last Friday and calculate the previous 4 weeks
+  let lastFriday = new Date(today);
+  
+  // Get last Friday
+  lastFriday.setDate(today.getDate() - (today.getDay() + 1) % 7); // Move to the previous Friday
+
+  // Calculate 4 weeks, starting from the Saturday of each week
+  for (let i = 0; i < 4; i++) {
+    // Calculate the Saturday of the current week (start of the week)
+    const saturdayOfWeek = new Date(lastFriday);
+    saturdayOfWeek.setDate(lastFriday.getDate() - 6); // Go back 6 days to get Saturday
+
+    // Calculate the Friday of the current week (end of the week)
+    const fridayOfWeek = new Date(lastFriday);
+
+    // Deduct one day from both Saturday and Friday to match the correct dates
+    saturdayOfWeek.setDate(saturdayOfWeek.getDate() - 1);  // Subtract 1 day from Saturday
+    fridayOfWeek.setDate(fridayOfWeek.getDate() - 1);  // Subtract 1 day from Friday
+
+    // Set the start date (Saturday) to 00:00:00
+    saturdayOfWeek.setHours(0, 0, 0, 0); // Set time to 00:00:00.000 (start of the day)
+
+    // Set the end date (Friday) to 23:59:59
+    fridayOfWeek.setHours(23, 59, 59, 999); // Set time to 23:59:59.999 (end of the day)
+
+    // Push the week start (Saturday) and end (Friday) to the weeks array
+    weeks.push({
+      start: adjustToTimezone(saturdayOfWeek.toISOString(), 'Asia/Bangkok'),
+      end: adjustToTimezone(fridayOfWeek.toISOString(), 'Asia/Bangkok'),
+    });
+
+    // Move to the previous week's Friday
+    lastFriday.setDate(lastFriday.getDate() - 7);
+  }
+
+  // Step 2: Log the calculated weeks for debugging
+  console.log('Weeks:', weeks);
+
+  // Step 3: Fetch data for each of the 4 weeks
+  try {
+    const adjustedResults = [];
+
+    // Loop through each week and fetch the ChangeRequest data
+    for (let week of weeks) {
+      const sql = `
+        SELECT * 
+        FROM ChangeRequest 
+        WHERE request_change_date BETWEEN ? AND ?
+        ORDER BY request_change_date ASC
+      `;
+      
+      // Query the database for the week range
+      const [results] = await db.promise().query(sql, [week.start, week.end]);
+      
+      // Log the results for each week
+      console.log(`Results for week ${week.start} to ${week.end}:`, results);
+
+      // Adjust the date for each result and store them
+      const weekData = results.map(request => {
+        request.request_change_date = adjustToTimezone(request.request_change_date, 'Asia/Bangkok');
+        return request;
+      });
+
+      // Push the data for the current week
+      adjustedResults.push({
+        week: week,
+        data: weekData
+      });
+    }
+
+    // Step 4: Send the final response to the frontend
+    res.json(adjustedResults);
+  } catch (err) {
+    console.error("❌ Error fetching ChangeRequests:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+};
 
 
 // update a new change request
@@ -470,4 +551,4 @@ const getFilteredData = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData };
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData };
