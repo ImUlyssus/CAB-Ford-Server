@@ -9,6 +9,7 @@ const businessCalendarRoutes = require("./routes/businessCalendarRoutes");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const tokenRefreshRoutes = require('./routes/refresh');
+const insertDummyData = require("./controllers/DummyDataGeneration");
 // const credentials = require('./middleware/credentials');
 // const corsOptions = require('./config/corsOptions');
 
@@ -30,7 +31,7 @@ app.use("/api/users", userRoutes)
 app.use("/api/login", authRoutes)
 app.use('/api/refresh', tokenRefreshRoutes);
 app.use('/api/logout', tokenRefreshRoutes);
-
+// insertDummyData();
 app.use(verifyJWT);
 // everything under verify JWT must be authenticated to get access
 
