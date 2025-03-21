@@ -567,6 +567,29 @@ const updateCheck = async (req, res) => {
       return res.status(500).json({ message: "❌ Internal server error." });
   }
 };
+const getCustomDateData = async (req, res) => {
+  try {
+      const { start, end } = req.query; // Get date range from request
+
+      if (!start || !end) {
+          return res.status(400).json({ error: "Start and end dates are required." });
+      }
+
+      const sql = `
+          SELECT * 
+          FROM ChangeRequest 
+          WHERE request_change_date BETWEEN ? AND ?
+          ORDER BY request_change_date ASC
+      `;
+
+      const [results] = await db.promise().query(sql, [start, end]);
+
+      res.json(results); // Send data back to frontend
+  } catch (err) {
+      console.error("❌ Error fetching custom date data:", err);
+      res.status(500).json({ error: "Database error", details: err.message });
+  }
+};
 
 const forceUpdateRequest = async (req, res) => {
   try {
@@ -717,4 +740,4 @@ const getFilteredData = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest };
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData };
