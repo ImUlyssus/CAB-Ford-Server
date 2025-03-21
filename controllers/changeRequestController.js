@@ -740,4 +740,27 @@ const getFilteredData = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData };
+const getVersionHistory = async (req, res) => {
+  try {
+    const { start, end } = req.query; // Get date range from request
+
+    if (!start || !end) {
+        return res.status(400).json({ error: "Start and end dates are required." });
+    }
+
+    const sql = `
+        SELECT * 
+        FROM OldChangeRequest 
+        WHERE updated_date BETWEEN ? AND ?
+        ORDER BY updated_date ASC
+    `;
+
+    const [results] = await db.promise().query(sql, [start, end]);
+    res.json(results); // Send data back to frontend
+} catch (err) {
+    console.error("❌ Error fetching custom date data:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+}
+}
+
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory };
