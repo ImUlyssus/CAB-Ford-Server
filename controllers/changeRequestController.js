@@ -436,7 +436,7 @@ const updateRequest = async (req, res) => {
       lesson_learnt, description, test_plan, rollback_plan, cancel_change_category,
       who, updated_date, updated_field, is_deleted
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, FALSE);`;
-
+    // const updatedDate = moment().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
     await db.promise().query(migrationSQL, [
       id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
       oldData.change_sites, oldData.common_change, oldData.request_change_date,
@@ -739,28 +739,123 @@ const getFilteredData = async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 const getVersionHistory = async (req, res) => {
   try {
     const { start, end } = req.query; // Get date range from request
 
     if (!start || !end) {
-        return res.status(400).json({ error: "Start and end dates are required." });
+      return res.status(400).json({ error: "Start and end dates are required." });
     }
 
     const sql = `
-        SELECT * 
-        FROM OldChangeRequest 
-        WHERE updated_date BETWEEN ? AND ?
-        ORDER BY updated_date ASC
+      SELECT * 
+      FROM OldChangeRequest 
+      WHERE updated_date BETWEEN ? AND ?
+      ORDER BY updated_date ASC
     `;
 
     const [results] = await db.promise().query(sql, [start, end]);
-    res.json(results); // Send data back to frontend
-} catch (err) {
+
+    // Convert updated_date to Bangkok timezone for each result
+    const formattedResults = results.map((row) => {
+      return {
+        ...row,
+        updated_date: moment(row.updated_date).tz('Asia/Bangkok').format('YYYY-MM-DD HH:mm:ss'),
+      };
+    });
+
+    res.json(formattedResults); // Send formatted data back to frontend
+  } catch (err) {
     console.error("❌ Error fetching custom date data:", err);
     res.status(500).json({ error: "Database error", details: err.message });
-}
-}
+  }
+};
+const getVHRequestDetails = async (req, res) => {
+  const { id } = req.params;
+  const { updated_date, is_deleted } = req.query; // Get updated_date from query params
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory };
+  if (!id || !updated_date) {
+    return res.status(400).json({ error: "❌ Request ID and updated_date are required." });
+  }
+  try {
+    if (is_deleted!=='0') {
+      // If is_deleted is true, return the row with the latest updated_date from OldChangeRequest
+      const sqlLatestOldRequest = `
+        SELECT * FROM OldChangeRequest 
+        WHERE original_id = ? 
+        ORDER BY updated_date DESC 
+        LIMIT 1
+      `;
+      const [latestOldResult] = await db.promise().query(sqlLatestOldRequest, [id]);
+
+      if (latestOldResult.length > 0) {
+        return res.json({
+          ...latestOldResult[0],
+          updated_date: moment(latestOldResult[0].updated_date)
+            .tz("Asia/Bangkok")
+            .format("YYYY-MM-DD HH:mm:ss"),
+        });
+      } else {
+        return res.status(404).json({ error: "❌ No records found in OldChangeRequest." });
+      }
+    }else{
+      // Step 1: Query all records from OldChangeRequest with the given original_id
+    const sqlOldRequest = `
+    SELECT * FROM OldChangeRequest 
+    WHERE original_id = ? 
+    ORDER BY updated_date DESC
+  `;
+  const [oldResults] = await db.promise().query(sqlOldRequest, [id]);
+
+  if (oldResults.length === 0) {
+    // If no old records exist, return data from ChangeRequest
+    const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
+    const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
+
+    if (changeResults.length > 0) {
+      return res.json(changeResults[0]);
+    } else {
+      return res.status(404).json({ error: "❌ No data found for the given ID." });
+    }
+  }
+
+  // Step 2: Check if updated_date is the latest date in OldChangeRequest
+  const latestOldRecord = oldResults[0]; // Since results are ordered DESC, first one is the latest
+  if (moment(updated_date).isSameOrAfter(moment(latestOldRecord.updated_date))) {
+    // If target updated_date is the latest, return data from ChangeRequest
+    const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
+    const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
+
+    if (changeResults.length > 0) {
+      return res.json(changeResults[0]);
+    } else {
+      return res.status(404).json({ error: "❌ No data found for the given ID." });
+    }
+  }
+
+  // Step 3: Find the closest (but less than) updated_date from OldChangeRequest
+  const closestRecord = oldResults.find(record =>
+    moment(record.updated_date).isBefore(moment(updated_date))
+  );
+
+  if (!closestRecord) {
+    return res.status(404).json({ error: "❌ No older records found before the given updated_date." });
+  }
+
+  // Convert updated_date to Bangkok timezone
+  const responseRecord = {
+    ...closestRecord,
+    updated_date: moment(closestRecord.updated_date)
+      .tz("Asia/Bangkok")
+      .format("YYYY-MM-DD HH:mm:ss"),
+  };
+
+  return res.json(responseRecord);
+    }
+  } catch (err) {
+    console.error("❌ Error fetching version history details:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+};
+
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails };
