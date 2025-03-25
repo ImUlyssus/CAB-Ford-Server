@@ -129,7 +129,7 @@ const createRequest = async (req, res) => {
     rollback_plan = null,
     achieve_2_week_change_request,
     approval = "Waiting", // Default to 'Waiting'
-    change_status = "Pending", // Default status
+    change_status = "", // Default status
     cancel_change_reason = null,
     reschedule_reason = null,
     lesson_learnt = null,
@@ -143,7 +143,8 @@ const createRequest = async (req, res) => {
     aat_crq,
     fsst_crq,
     is_someone_updating = '',
-    cancel_change_category = null
+    cancel_change_category = null,
+    lock_timestamp = null
   } = req.body;
 
   // Validate required fields
@@ -159,10 +160,14 @@ const createRequest = async (req, res) => {
       rollback_plan, approval, change_status, cancel_change_reason, 
       reschedule_reason, lesson_learnt, ftm_schedule_change, aat_schedule_change, 
       fsst_schedule_change, ftm_it_contact, aat_it_contact, fsst_it_contact, 
-      ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category, lock_timestamp
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-
+// Handle empty objects for global_team_contact and business_team_contact
+const sanitizedGlobalTeamContact =
+global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
+const sanitizedBusinessTeamContact =
+business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
   try {
     const [result] = await db.promise().query(sql, [
       category,
@@ -174,8 +179,8 @@ const createRequest = async (req, res) => {
       common_change,
       request_change_date,
       achieve_2_week_change_request,
-      (typeof global_team_contact === 'string' && global_team_contact.trim() !== "") ? global_team_contact : null,
-      (typeof business_team_contact === 'string' && business_team_contact.trim() !== "") ? business_team_contact : null,
+      sanitizedGlobalTeamContact,
+      sanitizedBusinessTeamContact,
       description || null,
       test_plan || null,
       rollback_plan || null,
@@ -194,7 +199,8 @@ const createRequest = async (req, res) => {
       (typeof aat_crq === 'string' && aat_crq.trim() !== "") ? aat_crq : null,
       (typeof fsst_crq === 'string' && fsst_crq.trim() !== "") ? fsst_crq : null,
       is_someone_updating || null,
-      cancel_change_category
+      cancel_change_category,
+      lock_timestamp
     ]);
 
     if (result.affectedRows === 0) {
@@ -626,6 +632,41 @@ const forceUpdateRequest = async (req, res) => {
       return res.status(500).json({ message: "❌ Internal server error." });
   }
 };
+const goBackUpdate = async (req, res) => {
+  try {
+      const { id, email } = req.body;
+
+      if (!id) {
+          return res.status(400).json({ message: "❌ ID is required." });
+      }
+
+      // Step 1: Check if the request exists
+      const [rows] = await db.promise().query(
+          "SELECT * FROM ChangeRequest WHERE id = ?",
+          [id]
+      );
+
+      if (rows.length === 0) {
+          return res.status(404).json({ message: "❌ Change Request not found." });
+      }
+
+      // Step 2: Force update the lock
+      await db.promise().query(
+          "UPDATE ChangeRequest SET is_someone_updating = ? WHERE id = ?",
+          [email, id]
+      );
+
+      // Step 3: Respond with success
+      return res.status(200).json({
+          message: "✅ Force update successful. You can now edit the request.",
+          canUpdate: true
+      });
+
+  } catch (error) {
+      console.error("❌ Error in force update:", error);
+      return res.status(500).json({ message: "❌ Internal server error." });
+  }
+};
 const deleteRequest = async (req, res) => {
   const { id } = req.params;
   const { email } = req.body; // Access the email from the body
@@ -835,7 +876,7 @@ const getVHRequestDetails = async (req, res) => {
 
   // Step 3: Find the closest (but less than) updated_date from OldChangeRequest
   const closestRecord = oldResults.find(record =>
-    moment(record.updated_date).isBefore(moment(updated_date))
+    moment(record.updated_date).isAfter(moment(updated_date))
   );
 
   if (!closestRecord) {
@@ -858,4 +899,4 @@ const getVHRequestDetails = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails };
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate };

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails } = require("../controllers/changeRequestController");
+const { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate } = require("../controllers/changeRequestController");
 
 router.post("/", createRequest);
 router.get("/", getRequests);
@@ -14,6 +14,7 @@ router.get('/details/:id', getVHRequestDetails);
 router.put("/", updateRequest);
 router.put("/check-to-update", updateCheck);
 router.put("/force-update", forceUpdateRequest);
+router.put("/go-back-update",goBackUpdate)
 router.delete("/:id", deleteRequest);
 
 module.exports = router;
