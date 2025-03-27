@@ -136,6 +136,7 @@ const createRequest = async (req, res) => {
     ftm_schedule_change,
     aat_schedule_change,
     fsst_schedule_change,
+    latest_schedule_date = null,
     ftm_it_contact, // Store as comma-separated values
     aat_it_contact, // Store as comma-separated values
     fsst_it_contact, // Store as comma-separated values
@@ -159,9 +160,9 @@ const createRequest = async (req, res) => {
       global_team_contact, business_team_contact, description, test_plan, 
       rollback_plan, approval, change_status, cancel_change_reason, 
       reschedule_reason, lesson_learnt, ftm_schedule_change, aat_schedule_change, 
-      fsst_schedule_change, ftm_it_contact, aat_it_contact, fsst_it_contact, 
+      fsst_schedule_change, latest_schedule_date, ftm_it_contact, aat_it_contact, fsst_it_contact, 
       ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category, lock_timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 // Handle empty objects for global_team_contact and business_team_contact
 const sanitizedGlobalTeamContact =
@@ -192,6 +193,7 @@ business_team_contact && Object.keys(business_team_contact).length > 0 ? busines
       ftm_schedule_change ? JSON.stringify(ftm_schedule_change) : null,
       aat_schedule_change ? JSON.stringify(aat_schedule_change) : null,
       fsst_schedule_change ? JSON.stringify(fsst_schedule_change) : null,
+      latest_schedule_date,
       (typeof ftm_it_contact === 'string' && ftm_it_contact.trim() !== "") ? ftm_it_contact : null,
       (typeof aat_it_contact === 'string' && aat_it_contact.trim() !== "") ? aat_it_contact : null,
       (typeof fsst_it_contact === 'string' && fsst_it_contact.trim() !== "") ? fsst_it_contact : null,
@@ -391,6 +393,7 @@ const updateRequest = async (req, res) => {
     ftm_schedule_change,
     aat_schedule_change,
     fsst_schedule_change,
+    latest_schedule_date,
     ftm_it_contact,
     aat_it_contact,
     fsst_it_contact,
@@ -420,7 +423,7 @@ const updateRequest = async (req, res) => {
     let updatedFields = [];
     const fields = [
       'category', 'reason', 'impact', 'priority', 'change_name', 'change_sites', 'common_change', 'request_change_date',
-      'achieve_2_week_change_request', 'ftm_schedule_change', 'aat_schedule_change', 'fsst_schedule_change',
+      'achieve_2_week_change_request', 'ftm_schedule_change', 'aat_schedule_change', 'fsst_schedule_change', 'latest_schedule_date',
       'ftm_it_contact', 'aat_it_contact', 'fsst_it_contact', 'global_team_contact', 'business_team_contact',
       'ftm_crq', 'aat_crq', 'fsst_crq', 'approval', 'change_status', 'cancel_change_reason', 'reschedule_reason',
       'lesson_learnt', 'description', 'test_plan', 'rollback_plan', 'cancel_change_category'
@@ -436,18 +439,18 @@ const updateRequest = async (req, res) => {
     // Step 3: Insert old data into OldChangeRequest
     const migrationSQL = `INSERT INTO OldChangeRequest (
       original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
-      achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change,
+      achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change, latest_schedule_date,
       ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
       ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
       lesson_learnt, description, test_plan, rollback_plan, cancel_change_category,
       who, updated_date, updated_field, is_deleted
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, FALSE);`;
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, FALSE);`;
     // const updatedDate = moment().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
     await db.promise().query(migrationSQL, [
       id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
       oldData.change_sites, oldData.common_change, oldData.request_change_date,
       oldData.achieve_2_week_change_request, oldData.ftm_schedule_change, oldData.aat_schedule_change, oldData.fsst_schedule_change,
-      oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
+      oldData.latest_schedule_date, oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
       oldData.business_team_contact, oldData.ftm_crq, oldData.aat_crq, oldData.fsst_crq, oldData.approval,
       oldData.change_status, oldData.cancel_change_reason, oldData.reschedule_reason, oldData.lesson_learnt,
       oldData.description, oldData.test_plan, oldData.rollback_plan, oldData.cancel_change_category,
@@ -461,7 +464,7 @@ const updateRequest = async (req, res) => {
       global_team_contact = ?, business_team_contact = ?, description = ?, test_plan = ?,
       rollback_plan = ?, approval = ?, change_status = ?, cancel_change_reason = ?,
       reschedule_reason = ?, lesson_learnt = ?, ftm_schedule_change = ?, aat_schedule_change = ?,
-      fsst_schedule_change = ?, ftm_it_contact = ?, aat_it_contact = ?, fsst_it_contact = ?,
+      fsst_schedule_change = ?, latest_schedule_date = ?, ftm_it_contact = ?, aat_it_contact = ?, fsst_it_contact = ?,
       ftm_crq = ?, aat_crq = ?, fsst_crq = ?, cancel_change_category = ?, is_someone_updating = ? WHERE id = ?;`;
 
       // Handle empty objects for global_team_contact and business_team_contact
@@ -493,6 +496,7 @@ const updateRequest = async (req, res) => {
       ftm_schedule_change ? JSON.stringify(ftm_schedule_change) : null,
       aat_schedule_change ? JSON.stringify(aat_schedule_change) : null,
       fsst_schedule_change ? JSON.stringify(fsst_schedule_change) : null,
+      latest_schedule_date,
       ftm_it_contact || null,
       aat_it_contact || null,
       fsst_it_contact || null,
