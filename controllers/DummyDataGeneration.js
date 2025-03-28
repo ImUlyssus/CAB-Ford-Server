@@ -1,6 +1,6 @@
 const db = require("../config/db"); // Import your database connection
-const { faker } = require("@faker-js/faker"); // For generating random text
-
+const { faker } = require("@faker-js/faker");
+const moment = require('moment-timezone');
 // Define ENUM values for randomization
 const categories = ["Hardware", "Application", "New tech update", "Password reset"];
 const reasons = ["Fix/Repair", "New functionality", "Maintenance", "Upgrade", "Tech refresh", "Yearly change"];
@@ -62,7 +62,7 @@ const insertDummyData = async () => {
 
     let sql = `INSERT INTO ChangeRequest (
       category, reason, impact, priority, change_name, change_sites, 
-      common_change, request_change_date, achieve_2_week_change_request, 
+      common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request, 
       approval, change_status, cancel_change_reason, cancel_change_category
   ) VALUES ?`;
 
@@ -71,7 +71,7 @@ const insertDummyData = async () => {
     // Loop through months from Jan 2023 to Feb 2025
     for (let year = 2023; year <= 2025; year++) {
         for (let month = 1; month <= 12; month++) {
-            if (year === 2025 && month > 11) break; // Stop after Feb 2025
+            if (year === 2025 && month > 2) break; // Stop after Feb 2025
 
             let requestDates = generateDatesForMonth(year, month);
 
@@ -84,16 +84,21 @@ const insertDummyData = async () => {
                 let change_sites = getRandomSites();
                 let common_change = change_sites.includes(",") ? true : false;
                 let achieve_2_week_change_request = Math.random() < 0.3; // 70% false, 30% true
-                let approval = Math.random() < 0.8 ? "YES" : "NO"; // 95% YES
+                let approval = Math.random() < 0.8 ? "YES" : "NO"; // 80% YES
                 let change_status = approval === "YES"
                     ? getRandomElement(["Completed with no issue", ""])
                     : getRandomElement(changeStatuses.filter(s => s !== "Completed with no issue"));
                 let cancel_change_reason = change_status !== "Completed with no issue" ? faker.lorem.sentence() : null;
                 let cancel_change_category = change_status !== "Completed with no issue" ? getRandomElement(cancelReasons) : null;
 
+                // Generate latest_schedule_date (randomized 3 to 7 days after request date)
+                let latest_schedule_date = moment(date, "YYYY-MM-DD HH:mm:ss")
+                    .add(Math.floor(Math.random() * 5) + 3, "days") // Add 3 to 7 days
+                    .format("YYYY-MM-DD");
+
                 values.push([
                     category, reason, impact, priority, change_name, change_sites,
-                    common_change, date, achieve_2_week_change_request,
+                    common_change, date, latest_schedule_date, achieve_2_week_change_request,
                     approval, change_status, cancel_change_reason, cancel_change_category
                 ]);
             });
@@ -109,3 +114,4 @@ const insertDummyData = async () => {
 };
 
 module.exports = insertDummyData;
+
