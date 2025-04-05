@@ -13,11 +13,13 @@ const createRequest = async (req, res) => {
     global_team_contact, // Store as comma-separated values
     business_team_contact, // Store as comma-separated values
     description = null,
-    test_plan = null,
+    aat_test_plan = null,
+    ftm_test_plan = null,
+    fsst_test_plan = null,
     rollback_plan = null,
     achieve_2_week_change_request,
     approval = "Waiting", // Default to 'Waiting'
-    change_status = "", // Default status
+    change_status = "_", // Default status
     cancel_change_reason = null,
     reschedule_reason = null,
     lesson_learnt = null,
@@ -45,12 +47,12 @@ const createRequest = async (req, res) => {
     INSERT INTO ChangeRequest (
       category, reason, impact, priority, change_name, change_sites, 
       common_change, request_change_date, achieve_2_week_change_request, 
-      global_team_contact, business_team_contact, description, test_plan, 
-      rollback_plan, approval, change_status, cancel_change_reason, 
+      global_team_contact, business_team_contact, description, aat_test_plan, 
+      ftm_test_plan, fsst_test_plan, rollback_plan, approval, change_status, cancel_change_reason, 
       reschedule_reason, lesson_learnt, ftm_schedule_change, aat_schedule_change, 
       fsst_schedule_change, latest_schedule_date, ftm_it_contact, aat_it_contact, fsst_it_contact, 
       ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category, lock_timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 // Handle empty objects for global_team_contact and business_team_contact
 const sanitizedGlobalTeamContact =
@@ -71,16 +73,18 @@ business_team_contact && Object.keys(business_team_contact).length > 0 ? busines
       sanitizedGlobalTeamContact,
       sanitizedBusinessTeamContact,
       description || null,
-      test_plan || null,
+      aat_test_plan || null,
+      ftm_test_plan || null,
+      fsst_test_plan || null,
       rollback_plan || null,
       approval,
       change_status,
       cancel_change_reason || null,
       reschedule_reason || null,
       lesson_learnt || null,
-      ftm_schedule_change ? JSON.stringify(ftm_schedule_change) : null,
-      aat_schedule_change ? JSON.stringify(aat_schedule_change) : null,
-      fsst_schedule_change ? JSON.stringify(fsst_schedule_change) : null,
+      ftm_schedule_change || null,
+aat_schedule_change || null,
+fsst_schedule_change || null,
       latest_schedule_date,
       (typeof ftm_it_contact === 'string' && ftm_it_contact.trim() !== "") ? ftm_it_contact : null,
       (typeof aat_it_contact === 'string' && aat_it_contact.trim() !== "") ? aat_it_contact : null,

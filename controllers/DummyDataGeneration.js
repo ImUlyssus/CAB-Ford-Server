@@ -71,7 +71,7 @@ const insertDummyData = async () => {
     // Loop through months from Jan 2023 to Feb 2025
     for (let year = 2023; year <= 2025; year++) {
         for (let month = 1; month <= 12; month++) {
-            if (year === 2025 && month > 2) break; // Stop after Feb 2025
+            if (year === 2025 && month > 11) break; // Stop after Feb 2025
 
             let requestDates = generateDatesForMonth(year, month);
 
