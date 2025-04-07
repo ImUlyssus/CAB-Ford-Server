@@ -13,6 +13,9 @@ const createRequest = async (req, res) => {
     global_team_contact, // Store as comma-separated values
     business_team_contact, // Store as comma-separated values
     description = null,
+    aat_requestor = null,
+    ftm_requestor = null,
+    fsst_requestor = null,
     aat_test_plan = null,
     ftm_test_plan = null,
     fsst_test_plan = null,
@@ -35,7 +38,8 @@ const createRequest = async (req, res) => {
     fsst_crq,
     is_someone_updating = '',
     cancel_change_category = null,
-    lock_timestamp = null
+    lock_timestamp = null,
+    remarks = ""
   } = req.body;
 
   // Validate required fields
@@ -47,18 +51,18 @@ const createRequest = async (req, res) => {
     INSERT INTO ChangeRequest (
       category, reason, impact, priority, change_name, change_sites, 
       common_change, request_change_date, achieve_2_week_change_request, 
-      global_team_contact, business_team_contact, description, aat_test_plan, 
+      global_team_contact, business_team_contact, description, aat_requestor, ftm_requestor, fsst_requestor, aat_test_plan, 
       ftm_test_plan, fsst_test_plan, rollback_plan, approval, change_status, cancel_change_reason, 
       reschedule_reason, lesson_learnt, ftm_schedule_change, aat_schedule_change, 
       fsst_schedule_change, latest_schedule_date, ftm_it_contact, aat_it_contact, fsst_it_contact, 
-      ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category, lock_timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ftm_crq, aat_crq, fsst_crq, is_someone_updating, cancel_change_category, lock_timestamp, remarks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-// Handle empty objects for global_team_contact and business_team_contact
-const sanitizedGlobalTeamContact =
-global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
-const sanitizedBusinessTeamContact =
-business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
+  // Handle empty objects for global_team_contact and business_team_contact
+  const sanitizedGlobalTeamContact =
+    global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
+  const sanitizedBusinessTeamContact =
+    business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
   try {
     const [result] = await db.promise().query(sql, [
       category,
@@ -73,6 +77,9 @@ business_team_contact && Object.keys(business_team_contact).length > 0 ? busines
       sanitizedGlobalTeamContact,
       sanitizedBusinessTeamContact,
       description || null,
+      aat_requestor || null,
+      ftm_requestor || null,
+      fsst_requestor || null,
       aat_test_plan || null,
       ftm_test_plan || null,
       fsst_test_plan || null,
@@ -83,8 +90,8 @@ business_team_contact && Object.keys(business_team_contact).length > 0 ? busines
       reschedule_reason || null,
       lesson_learnt || null,
       ftm_schedule_change || null,
-aat_schedule_change || null,
-fsst_schedule_change || null,
+      aat_schedule_change || null,
+      fsst_schedule_change || null,
       latest_schedule_date,
       (typeof ftm_it_contact === 'string' && ftm_it_contact.trim() !== "") ? ftm_it_contact : null,
       (typeof aat_it_contact === 'string' && aat_it_contact.trim() !== "") ? aat_it_contact : null,
@@ -94,7 +101,8 @@ fsst_schedule_change || null,
       (typeof fsst_crq === 'string' && fsst_crq.trim() !== "") ? fsst_crq : null,
       is_someone_updating || null,
       cancel_change_category,
-      lock_timestamp
+      lock_timestamp,
+      remarks
     ]);
 
     if (result.affectedRows === 0) {
@@ -189,7 +197,7 @@ const getWeeklyData = async (req, res) => {
 
   // Step 1: Find the last Friday and calculate the previous 4 weeks
   let lastFriday = new Date(today);
-  
+
   // Get last Friday
   lastFriday.setDate(today.getDate() - (today.getDay() + 1) % 7); // Move to the previous Friday
 
@@ -234,10 +242,10 @@ const getWeeklyData = async (req, res) => {
         WHERE request_change_date BETWEEN ? AND ?
         ORDER BY request_change_date ASC
       `;
-      
+
       // Query the database for the week range
       const [results] = await db.promise().query(sql, [week.start, week.end]);
-      
+
 
       // Adjust the date for each result and store them
       const weekData = results.map(request => {
@@ -299,7 +307,7 @@ const updateRequest = async (req, res) => {
   if (!id) {
     return res.status(400).json({ error: "❌ Request ID is required for updating." });
   }
-  
+
 
   try {
     // Step 1: Fetch current record from ChangeRequest
@@ -326,7 +334,6 @@ const updateRequest = async (req, res) => {
         updatedFields.push(index + 1); // Store as space-separated numbers
       }
     });
-    console.log(updatedFields);
 
     // Step 3: Insert old data into OldChangeRequest
     const migrationSQL = `INSERT INTO OldChangeRequest (
@@ -359,11 +366,11 @@ const updateRequest = async (req, res) => {
       fsst_schedule_change = ?, latest_schedule_date = ?, ftm_it_contact = ?, aat_it_contact = ?, fsst_it_contact = ?,
       ftm_crq = ?, aat_crq = ?, fsst_crq = ?, cancel_change_category = ?, is_someone_updating = ? WHERE id = ?;`;
 
-      // Handle empty objects for global_team_contact and business_team_contact
+    // Handle empty objects for global_team_contact and business_team_contact
     const sanitizedGlobalTeamContact =
-    global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
-  const sanitizedBusinessTeamContact =
-    business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
+      global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
+    const sanitizedBusinessTeamContact =
+      business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
     // Replace undefined or null values with appropriate defaults
     const updateValues = [
       category || null,
@@ -417,150 +424,150 @@ const updateCheck = async (req, res) => {
   const { email, id } = req.body;
 
   if (!email || !id) {
-      return res.status(400).json({ message: "❌ Email and ID are required." });
+    return res.status(400).json({ message: "❌ Email and ID are required." });
   }
 
   try {
-      // Step 1: Retrieve the current request from the database
-      const [rows] = await db.promise().query("SELECT * FROM ChangeRequest WHERE id = ?", [id]);
+    // Step 1: Retrieve the current request from the database
+    const [rows] = await db.promise().query("SELECT * FROM ChangeRequest WHERE id = ?", [id]);
 
-      if (rows.length === 0) {
-          return res.status(404).json({ message: "❌ Change Request not found." });
-      }
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "❌ Change Request not found." });
+    }
 
-      const request = rows[0];
+    const request = rows[0];
 
-      // Step 2: Check if the request is locked and if the lock has expired
-      if (request.is_someone_updating && request.is_someone_updating !== '') {
-          const lockTimestamp = new Date(request.lock_timestamp);
-          const currentTime = new Date();
-          const timeDifference = (currentTime - lockTimestamp) / 1000 / 60; // Difference in minutes
+    // Step 2: Check if the request is locked and if the lock has expired
+    if (request.is_someone_updating && request.is_someone_updating !== '') {
+      const lockTimestamp = new Date(request.lock_timestamp);
+      const currentTime = new Date();
+      const timeDifference = (currentTime - lockTimestamp) / 1000 / 60; // Difference in minutes
 
-          if (timeDifference > 30) { // If lock is older than 30 minutes
-              // Reset lock
-              await db.promise().query("UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?", [null, null, id]);
+      if (timeDifference > 30) { // If lock is older than 30 minutes
+        // Reset lock
+        await db.promise().query("UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?", [null, null, id]);
 
-              // Allow user to update
-              return res.status(200).json({
-                  message: "✅ 30 mins lock expired. You can now update the request.",
-                  canUpdate: true
-              });
-          }
-
-          // Instead of returning 409, return 200 with a force update flag
-          return res.status(200).json({
-              message: `❌ This request is currently being updated by ${request.is_someone_updating}`,
-              isSomeoneUpdating: request.is_someone_updating,
-              canForceUpdate: true // 🆕 Add this flag
-          });
-      }
-
-      // Step 3: If 'is_someone_updating' is null or empty, update it with the email and set timestamp
-      await db.promise().query("UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?", [email, new Date(), id]);
-
-      // Step 4: Respond with 'true' since the update is successful
-      return res.status(200).json({
-          message: "✅ You can update the request now.",
+        // Allow user to update
+        return res.status(200).json({
+          message: "✅ 30 mins lock expired. You can now update the request.",
           canUpdate: true
+        });
+      }
+
+      // Instead of returning 409, return 200 with a force update flag
+      return res.status(200).json({
+        message: `❌ This request is currently being updated by ${request.is_someone_updating}`,
+        isSomeoneUpdating: request.is_someone_updating,
+        canForceUpdate: true // 🆕 Add this flag
       });
+    }
+
+    // Step 3: If 'is_someone_updating' is null or empty, update it with the email and set timestamp
+    await db.promise().query("UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?", [email, new Date(), id]);
+
+    // Step 4: Respond with 'true' since the update is successful
+    return res.status(200).json({
+      message: "✅ You can update the request now.",
+      canUpdate: true
+    });
 
   } catch (error) {
-      console.error("❌ Error in check-to-update:", error);
-      return res.status(500).json({ message: "❌ Internal server error." });
+    console.error("❌ Error in check-to-update:", error);
+    return res.status(500).json({ message: "❌ Internal server error." });
   }
 };
 const getCustomDateData = async (req, res) => {
   try {
-      const { start, end } = req.query; // Get date range from request
+    const { start, end } = req.query; // Get date range from request
 
-      if (!start || !end) {
-          return res.status(400).json({ error: "Start and end dates are required." });
-      }
+    if (!start || !end) {
+      return res.status(400).json({ error: "Start and end dates are required." });
+    }
 
-      const sql = `
+    const sql = `
           SELECT * 
           FROM ChangeRequest 
           WHERE request_change_date BETWEEN ? AND ?
           ORDER BY request_change_date ASC
       `;
 
-      const [results] = await db.promise().query(sql, [start, end]);
+    const [results] = await db.promise().query(sql, [start, end]);
 
-      res.json(results); // Send data back to frontend
+    res.json(results); // Send data back to frontend
   } catch (err) {
-      console.error("❌ Error fetching custom date data:", err);
-      res.status(500).json({ error: "Database error", details: err.message });
+    console.error("❌ Error fetching custom date data:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
   }
 };
 
 const forceUpdateRequest = async (req, res) => {
   try {
-      const { id, email } = req.body;
+    const { id, email } = req.body;
 
-      if (!id || !email) {
-          return res.status(400).json({ message: "❌ Email and ID are required." });
-      }
+    if (!id || !email) {
+      return res.status(400).json({ message: "❌ Email and ID are required." });
+    }
 
-      // Step 1: Check if the request exists
-      const [rows] = await db.promise().query(
-          "SELECT * FROM ChangeRequest WHERE id = ?",
-          [id]
-      );
+    // Step 1: Check if the request exists
+    const [rows] = await db.promise().query(
+      "SELECT * FROM ChangeRequest WHERE id = ?",
+      [id]
+    );
 
-      if (rows.length === 0) {
-          return res.status(404).json({ message: "❌ Change Request not found." });
-      }
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "❌ Change Request not found." });
+    }
 
-      // Step 2: Force update the lock
-      await db.promise().query(
-          "UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?",
-          [email, new Date(), id]
-      );
+    // Step 2: Force update the lock
+    await db.promise().query(
+      "UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?",
+      [email, new Date(), id]
+    );
 
-      // Step 3: Respond with success
-      return res.status(200).json({
-          message: "✅ Force update successful. You can now edit the request.",
-          canUpdate: true
-      });
+    // Step 3: Respond with success
+    return res.status(200).json({
+      message: "✅ Force update successful. You can now edit the request.",
+      canUpdate: true
+    });
 
   } catch (error) {
-      console.error("❌ Error in force update:", error);
-      return res.status(500).json({ message: "❌ Internal server error." });
+    console.error("❌ Error in force update:", error);
+    return res.status(500).json({ message: "❌ Internal server error." });
   }
 };
 const goBackUpdate = async (req, res) => {
   try {
-      const { id, email } = req.body;
+    const { id, email } = req.body;
 
-      if (!id) {
-          return res.status(400).json({ message: "❌ ID is required." });
-      }
+    if (!id) {
+      return res.status(400).json({ message: "❌ ID is required." });
+    }
 
-      // Step 1: Check if the request exists
-      const [rows] = await db.promise().query(
-          "SELECT * FROM ChangeRequest WHERE id = ?",
-          [id]
-      );
+    // Step 1: Check if the request exists
+    const [rows] = await db.promise().query(
+      "SELECT * FROM ChangeRequest WHERE id = ?",
+      [id]
+    );
 
-      if (rows.length === 0) {
-          return res.status(404).json({ message: "❌ Change Request not found." });
-      }
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "❌ Change Request not found." });
+    }
 
-      // Step 2: Force update the lock
-      await db.promise().query(
-          "UPDATE ChangeRequest SET is_someone_updating = ? WHERE id = ?",
-          [email, id]
-      );
+    // Step 2: Force update the lock
+    await db.promise().query(
+      "UPDATE ChangeRequest SET is_someone_updating = ? WHERE id = ?",
+      [email, id]
+    );
 
-      // Step 3: Respond with success
-      return res.status(200).json({
-          message: "✅ Force update successful. You can now edit the request.",
-          canUpdate: true
-      });
+    // Step 3: Respond with success
+    return res.status(200).json({
+      message: "✅ Force update successful. You can now edit the request.",
+      canUpdate: true
+    });
 
   } catch (error) {
-      console.error("❌ Error in force update:", error);
-      return res.status(500).json({ message: "❌ Internal server error." });
+    console.error("❌ Error in force update:", error);
+    return res.status(500).json({ message: "❌ Internal server error." });
   }
 };
 const deleteRequest = async (req, res) => {
@@ -568,19 +575,19 @@ const deleteRequest = async (req, res) => {
   const { email } = req.body; // Access the email from the body
 
   if (!id || !email) {
-      return res.status(400).json({ error: "❌ Request ID and Email are required for deletion." });
+    return res.status(400).json({ error: "❌ Request ID and Email are required for deletion." });
   }
 
   try {
-      // Step 1: Insert old data into OldChangeRequest table with 'who' as the email
-      const [rows] = await db.promise().query("SELECT * FROM ChangeRequest WHERE id = ?", [id]);
+    // Step 1: Insert old data into OldChangeRequest table with 'who' as the email
+    const [rows] = await db.promise().query("SELECT * FROM ChangeRequest WHERE id = ?", [id]);
 
-      if (rows.length === 0) {
-          return res.status(404).json({ error: "❌ Change Request not found." });
-      }
-      const oldData = rows[0];
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "❌ Change Request not found." });
+    }
+    const oldData = rows[0];
 
-      const migrationSQL = `INSERT INTO OldChangeRequest (
+    const migrationSQL = `INSERT INTO OldChangeRequest (
           original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
           achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change,
           ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
@@ -589,30 +596,30 @@ const deleteRequest = async (req, res) => {
           who, updated_date, updated_field, is_deleted
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, TRUE);`;
 
-      await db.promise().query(migrationSQL, [
-          id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
-          oldData.change_sites, oldData.common_change, oldData.request_change_date,
-          oldData.achieve_2_week_change_request, oldData.ftm_schedule_change, oldData.aat_schedule_change, oldData.fsst_schedule_change,
-          oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
-          oldData.business_team_contact, oldData.ftm_crq, oldData.aat_crq, oldData.fsst_crq, oldData.approval,
-          oldData.change_status, oldData.cancel_change_reason, oldData.reschedule_reason, oldData.lesson_learnt,
-          oldData.description, oldData.test_plan, oldData.rollback_plan, oldData.cancel_change_category,
-          email, '', // Store the email in the 'who' column and update date
-      ]);
+    await db.promise().query(migrationSQL, [
+      id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
+      oldData.change_sites, oldData.common_change, oldData.request_change_date,
+      oldData.achieve_2_week_change_request, oldData.ftm_schedule_change, oldData.aat_schedule_change, oldData.fsst_schedule_change,
+      oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
+      oldData.business_team_contact, oldData.ftm_crq, oldData.aat_crq, oldData.fsst_crq, oldData.approval,
+      oldData.change_status, oldData.cancel_change_reason, oldData.reschedule_reason, oldData.lesson_learnt,
+      oldData.description, oldData.test_plan, oldData.rollback_plan, oldData.cancel_change_category,
+      email, '', // Store the email in the 'who' column and update date
+    ]);
 
-      // Step 2: Delete the request from ChangeRequest table
-      const sql = "DELETE FROM ChangeRequest WHERE id = ?";
-      const [result] = await db.promise().query(sql, [id]);
+    // Step 2: Delete the request from ChangeRequest table
+    const sql = "DELETE FROM ChangeRequest WHERE id = ?";
+    const [result] = await db.promise().query(sql, [id]);
 
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "❌ Change Request not found." });
-      }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "❌ Change Request not found." });
+    }
 
-      res.status(200).json({ message: "✅ Change Request deleted successfully." });
+    res.status(200).json({ message: "✅ Change Request deleted successfully." });
 
   } catch (err) {
-      console.error("❌ Error deleting Change Request:", err);
-      res.status(500).json({ error: "Database error", details: err.message });
+    console.error("❌ Error deleting Change Request:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
   }
 };
 
@@ -624,56 +631,56 @@ const getWeekRange = (year, month) => {
   let startDate = new Date(firstDay);
 
   if (startDate.getDay() !== 6) {
-      startDate.setDate(startDate.getDate() - (startDate.getDay() + 1) % 7);
+    startDate.setDate(startDate.getDate() - (startDate.getDay() + 1) % 7);
   }
 
   while (startDate <= lastDay) {
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
-      if (startDate.getMonth() === month || endDate.getMonth() === month) {
-          weeks.push({
-              start: startDate.toISOString().split("T")[0],
-              end: endDate.toISOString().split("T")[0]
-          });
-      }
-      startDate.setDate(startDate.getDate() + 7);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    if (startDate.getMonth() === month || endDate.getMonth() === month) {
+      weeks.push({
+        start: startDate.toISOString().split("T")[0],
+        end: endDate.toISOString().split("T")[0]
+      });
+    }
+    startDate.setDate(startDate.getDate() + 7);
   }
   return weeks;
 };
 const getFilteredData = async (req, res) => {
   try {
-      const { year, quarter, month, week } = req.query;
-      let query = "SELECT * FROM change_requests WHERE YEAR(request_change_date) = ?";
-      let params = [year];
+    const { year, quarter, month, week } = req.query;
+    let query = "SELECT * FROM change_requests WHERE YEAR(request_change_date) = ?";
+    let params = [year];
 
-      if (quarter !== "All") {
-          const quarterMonths = { 1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12] };
-          query += " AND MONTH(request_change_date) IN (?)";
-          params.push(quarterMonths[quarter]);
-      }
+    if (quarter !== "All") {
+      const quarterMonths = { 1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12] };
+      query += " AND MONTH(request_change_date) IN (?)";
+      params.push(quarterMonths[quarter]);
+    }
 
-      if (month !== "All") {
-          const monthNumber = new Date(`${month} 1, ${year}`).getMonth() + 1;
-          query += " AND MONTH(request_change_date) = ?";
-          params.push(monthNumber);
-      }
+    if (month !== "All") {
+      const monthNumber = new Date(`${month} 1, ${year}`).getMonth() + 1;
+      query += " AND MONTH(request_change_date) = ?";
+      params.push(monthNumber);
+    }
 
-      if (week !== "All" && month !== "All") {
-          const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
-          const weeks = getWeekRange(year, monthIndex);
-          const [startStr, endStr] = week.split(" - ");
-          
-          const startDate = weeks.find(w => w.start.includes(startStr)).start;
-          const endDate = weeks.find(w => w.end.includes(endStr)).end;
-          query += " AND request_change_date BETWEEN ? AND ?";
-          params.push(startDate, endDate);
-      }
+    if (week !== "All" && month !== "All") {
+      const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+      const weeks = getWeekRange(year, monthIndex);
+      const [startStr, endStr] = week.split(" - ");
 
-      const [results] = db.query(query, params);
-      res.json(results);
+      const startDate = weeks.find(w => w.start.includes(startStr)).start;
+      const endDate = weeks.find(w => w.end.includes(endStr)).end;
+      query += " AND request_change_date BETWEEN ? AND ?";
+      params.push(startDate, endDate);
+    }
+
+    const [results] = db.query(query, params);
+    res.json(results);
   } catch (err) {
-      console.error("Error filtering change requests:", err);
-      res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error filtering change requests:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 const getVersionHistory = async (req, res) => {
@@ -715,7 +722,7 @@ const getVHRequestDetails = async (req, res) => {
     return res.status(400).json({ error: "❌ Request ID and updated_date are required." });
   }
   try {
-    if (is_deleted!=='0') {
+    if (is_deleted !== '0') {
       // If is_deleted is true, return the row with the latest updated_date from OldChangeRequest
       const sqlLatestOldRequest = `
         SELECT * FROM OldChangeRequest 
@@ -735,59 +742,59 @@ const getVHRequestDetails = async (req, res) => {
       } else {
         return res.status(404).json({ error: "❌ No records found in OldChangeRequest." });
       }
-    }else{
+    } else {
       // Step 1: Query all records from OldChangeRequest with the given original_id
-    const sqlOldRequest = `
+      const sqlOldRequest = `
     SELECT * FROM OldChangeRequest 
     WHERE original_id = ? 
     ORDER BY updated_date DESC
   `;
-  const [oldResults] = await db.promise().query(sqlOldRequest, [id]);
+      const [oldResults] = await db.promise().query(sqlOldRequest, [id]);
 
-  if (oldResults.length === 0) {
-    // If no old records exist, return data from ChangeRequest
-    const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
-    const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
+      if (oldResults.length === 0) {
+        // If no old records exist, return data from ChangeRequest
+        const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
+        const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
 
-    if (changeResults.length > 0) {
-      return res.json(changeResults[0]);
-    } else {
-      return res.status(404).json({ error: "❌ No data found for the given ID." });
-    }
-  }
+        if (changeResults.length > 0) {
+          return res.json(changeResults[0]);
+        } else {
+          return res.status(404).json({ error: "❌ No data found for the given ID." });
+        }
+      }
 
-  // Step 2: Check if updated_date is the latest date in OldChangeRequest
-  const latestOldRecord = oldResults[0]; // Since results are ordered DESC, first one is the latest
-  if (moment(updated_date).isSameOrAfter(moment(latestOldRecord.updated_date))) {
-    // If target updated_date is the latest, return data from ChangeRequest
-    const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
-    const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
+      // Step 2: Check if updated_date is the latest date in OldChangeRequest
+      const latestOldRecord = oldResults[0]; // Since results are ordered DESC, first one is the latest
+      if (moment(updated_date).isSameOrAfter(moment(latestOldRecord.updated_date))) {
+        // If target updated_date is the latest, return data from ChangeRequest
+        const sqlChangeRequest = "SELECT * FROM ChangeRequest WHERE id = ?";
+        const [changeResults] = await db.promise().query(sqlChangeRequest, [id]);
 
-    if (changeResults.length > 0) {
-      return res.json(changeResults[0]);
-    } else {
-      return res.status(404).json({ error: "❌ No data found for the given ID." });
-    }
-  }
+        if (changeResults.length > 0) {
+          return res.json(changeResults[0]);
+        } else {
+          return res.status(404).json({ error: "❌ No data found for the given ID." });
+        }
+      }
 
-  // Step 3: Find the closest (but less than) updated_date from OldChangeRequest
-  const closestRecord = oldResults.find(record =>
-    moment(record.updated_date).isAfter(moment(updated_date))
-  );
+      // Step 3: Find the closest (but less than) updated_date from OldChangeRequest
+      const closestRecord = oldResults.find(record =>
+        moment(record.updated_date).isAfter(moment(updated_date))
+      );
 
-  if (!closestRecord) {
-    return res.status(404).json({ error: "❌ No older records found before the given updated_date." });
-  }
+      if (!closestRecord) {
+        return res.status(404).json({ error: "❌ No older records found before the given updated_date." });
+      }
 
-  // Convert updated_date to Bangkok timezone
-  const responseRecord = {
-    ...closestRecord,
-    updated_date: moment(closestRecord.updated_date)
-      .tz("Asia/Bangkok")
-      .format("YYYY-MM-DD HH:mm:ss"),
-  };
+      // Convert updated_date to Bangkok timezone
+      const responseRecord = {
+        ...closestRecord,
+        updated_date: moment(closestRecord.updated_date)
+          .tz("Asia/Bangkok")
+          .format("YYYY-MM-DD HH:mm:ss"),
+      };
 
-  return res.json(responseRecord);
+      return res.json(responseRecord);
     }
   } catch (err) {
     console.error("❌ Error fetching version history details:", err);
@@ -809,10 +816,10 @@ const getThisWeekData = async (req, res) => {
     if (today.day() === 5) nextFriday = today; // If today is Friday, use today
 
     // Convert to YYYY-MM-DD format for SQL query
-    // const latestSaturdayStr = latestSaturday.format("YYYY-MM-DD");
-    // const nextFridayStr = nextFriday.format("YYYY-MM-DD");
-    const latestSaturdayStr = '2025-02-22';
-    const nextFridayStr = '2025-02-28';
+    const latestSaturdayStr = latestSaturday.format("YYYY-MM-DD");
+    const nextFridayStr = nextFriday.format("YYYY-MM-DD");
+    // const latestSaturdayStr = '2025-02-22';
+    // const nextFridayStr = '2025-02-28';
     console.log("Latest Saturday:", latestSaturdayStr);
     console.log("Next Friday:", nextFridayStr);
 

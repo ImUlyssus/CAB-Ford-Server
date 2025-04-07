@@ -9,13 +9,16 @@ const priorities = ["Critical", "High", "Medium", "Low"];
 const sites = ["aat", "ftm", "fsst"];
 const approval = ["YES", "NO"];
 const changeStatuses = [
-    "",
-    "Completed with no issue",
-    "Cancel change request",
-    "FTM change cancel",
-    "AAT change cancel",
-    "FSST change cancel",
-    "Common change cancel"
+    '_',
+      'Completed with no issue',
+      'Cancel change request',
+      'FTM change cancel',
+      'AAT change cancel',
+      'FSST change cancel',
+      'Common change cancel',
+      'Postponed',
+      'On plan',
+      'In-progress'
 ];
 const cancelReasons = ["Reason 1", "Reason 2", "Reason 3"];
 
@@ -86,7 +89,7 @@ const insertDummyData = async () => {
                 let achieve_2_week_change_request = Math.random() < 0.3; // 70% false, 30% true
                 let approval = Math.random() < 0.8 ? "YES" : "NO"; // 80% YES
                 let change_status = approval === "YES"
-                    ? getRandomElement(["Completed with no issue", ""])
+                    ? getRandomElement(["Completed with no issue", "_"])
                     : getRandomElement(changeStatuses.filter(s => s !== "Completed with no issue"));
                 let cancel_change_reason = change_status !== "Completed with no issue" ? faker.lorem.sentence() : null;
                 let cancel_change_category = change_status !== "Completed with no issue" ? getRandomElement(cancelReasons) : null;
