@@ -195,42 +195,42 @@ const getWeeklyData = async (req, res) => {
   const weeks = [];
   const today = new Date();
 
-  // Step 1: Find the last Friday and calculate the previous 4 weeks
-  let lastFriday = new Date(today);
+  // Step 1: Calculate the date for last Saturday
+  let lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - (today.getDay() + 1) % 7 - 1); // Move to the previous Saturday
 
-  // Get last Friday
-  lastFriday.setDate(today.getDate() - (today.getDay() + 1) % 7); // Move to the previous Friday
-
-  // Calculate 4 weeks, starting from the Saturday of each week
-  for (let i = 0; i < 4; i++) {
+  // Calculate 5 weeks, starting from the Saturday of each week
+  for (let i = 0; i < 5; i++) {
     // Calculate the Saturday of the current week (start of the week)
-    const saturdayOfWeek = new Date(lastFriday);
-    saturdayOfWeek.setDate(lastFriday.getDate() - 6); // Go back 6 days to get Saturday
+    const saturdayOfWeek = new Date(lastSaturday);
 
     // Calculate the Friday of the current week (end of the week)
-    const fridayOfWeek = new Date(lastFriday);
+    const fridayOfWeek = new Date(saturdayOfWeek);
+    fridayOfWeek.setDate(saturdayOfWeek.getDate() + 6);  // Move to Friday
 
-    // Deduct one day from both Saturday and Friday to match the correct dates
-    saturdayOfWeek.setDate(saturdayOfWeek.getDate() - 1);  // Subtract 1 day from Saturday
-    fridayOfWeek.setDate(fridayOfWeek.getDate() - 1);  // Subtract 1 day from Friday
+    // If it is the current week, set the end date to today
+    let endDate = fridayOfWeek;
+    if (i === 0) {
+      endDate = new Date(today);
+    }
 
     // Set the start date (Saturday) to 00:00:00
     saturdayOfWeek.setHours(0, 0, 0, 0); // Set time to 00:00:00.000 (start of the day)
 
-    // Set the end date (Friday) to 23:59:59
-    fridayOfWeek.setHours(23, 59, 59, 999); // Set time to 23:59:59.999 (end of the day)
+    // Set the end date (Friday or today) to 23:59:59
+    endDate.setHours(23, 59, 59, 999); // Set time to 23:59:59.999 (end of the day)
 
     // Push the week start (Saturday) and end (Friday) to the weeks array
     weeks.push({
       start: adjustToTimezone(saturdayOfWeek.toISOString(), 'Asia/Bangkok'),
-      end: adjustToTimezone(fridayOfWeek.toISOString(), 'Asia/Bangkok'),
+      end: adjustToTimezone(endDate.toISOString(), 'Asia/Bangkok'),
     });
 
-    // Move to the previous week's Friday
-    lastFriday.setDate(lastFriday.getDate() - 7);
+    // Move to the previous week's Saturday
+    lastSaturday.setDate(lastSaturday.getDate() - 7);
   }
 
-  // Step 3: Fetch data for each of the 4 weeks
+  // Step 3: Fetch data for each of the 5 weeks
   try {
     const adjustedResults = [];
 
@@ -267,6 +267,7 @@ const getWeeklyData = async (req, res) => {
     res.status(500).json({ error: "Database error", details: err.message });
   }
 };
+
 const updateRequest = async (req, res) => {
   const {
     email,
@@ -282,7 +283,12 @@ const updateRequest = async (req, res) => {
     global_team_contact,
     business_team_contact,
     description = null,
-    test_plan = null,
+    aat_test_plan = null,
+    ftm_test_plan = null,
+    fsst_test_plan = null,
+    aat_requestor = null,
+    ftm_requestor = null,
+    fsst_requestor = null,
     rollback_plan = null,
     achieve_2_week_change_request,
     approval,
@@ -301,7 +307,8 @@ const updateRequest = async (req, res) => {
     aat_crq,
     fsst_crq,
     is_someone_updating,
-    cancel_change_category
+    cancel_change_category,
+    remarks
   } = req.body;
 
   if (!id) {
@@ -319,32 +326,17 @@ const updateRequest = async (req, res) => {
     if (email !== oldData.is_someone_updating) {
       return res.status(400).json({ error: "❌ CDSID is not matching to update." });
     }
-    // Step 2: Determine which fields have changed
-    let updatedFields = [];
-    const fields = [
-      'category', 'reason', 'impact', 'priority', 'change_name', 'change_sites', 'common_change', 'request_change_date',
-      'achieve_2_week_change_request', 'ftm_schedule_change', 'aat_schedule_change', 'fsst_schedule_change', 'latest_schedule_date',
-      'ftm_it_contact', 'aat_it_contact', 'fsst_it_contact', 'global_team_contact', 'business_team_contact',
-      'ftm_crq', 'aat_crq', 'fsst_crq', 'approval', 'change_status', 'cancel_change_reason', 'reschedule_reason',
-      'lesson_learnt', 'description', 'test_plan', 'rollback_plan', 'cancel_change_category'
-    ];
-
-    fields.forEach((field, index) => {
-      if (req.body[field] !== undefined && req.body[field] !== oldData[field]) {
-        updatedFields.push(index + 1); // Store as space-separated numbers
-      }
-    });
 
     // Step 3: Insert old data into OldChangeRequest
     const migrationSQL = `INSERT INTO OldChangeRequest (
-      original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
-      achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change, latest_schedule_date,
-      ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
-      ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
-      lesson_learnt, description, test_plan, rollback_plan, cancel_change_category,
-      who, updated_date, updated_field, is_deleted
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, FALSE);`;
-    // const updatedDate = moment().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
+  original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
+  achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change, latest_schedule_date,
+  ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
+  ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
+  lesson_learnt, description, aat_test_plan, ftm_test_plan, fsst_test_plan, aat_requestor, ftm_requestor, fsst_requestor, rollback_plan, cancel_change_category,
+  who, updated_date, remarks, is_deleted
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, FALSE);`;
+
     await db.promise().query(migrationSQL, [
       id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
       oldData.change_sites, oldData.common_change, oldData.request_change_date,
@@ -352,19 +344,19 @@ const updateRequest = async (req, res) => {
       oldData.latest_schedule_date, oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
       oldData.business_team_contact, oldData.ftm_crq, oldData.aat_crq, oldData.fsst_crq, oldData.approval,
       oldData.change_status, oldData.cancel_change_reason, oldData.reschedule_reason, oldData.lesson_learnt,
-      oldData.description, oldData.test_plan, oldData.rollback_plan, oldData.cancel_change_category,
-      is_someone_updating, updatedFields.join(' ')
+      oldData.description, oldData.aat_test_plan, oldData.ftm_test_plan, oldData.fsst_test_plan, oldData.aat_requestor, oldData.ftm_requestor,
+      oldData.fsst_requestor, oldData.rollback_plan, oldData.cancel_change_category, is_someone_updating, oldData.remarks // Swapped positions
     ]);
 
     // Step 4: Update ChangeRequest
     const updateSQL = `UPDATE ChangeRequest SET 
       category = ?, reason = ?, impact = ?, priority = ?, change_name = ?, change_sites = ?,
       common_change = ?, achieve_2_week_change_request = ?,
-      global_team_contact = ?, business_team_contact = ?, description = ?, test_plan = ?,
-      rollback_plan = ?, approval = ?, change_status = ?, cancel_change_reason = ?,
+      global_team_contact = ?, business_team_contact = ?, description = ?, aat_test_plan = ?, ftm_test_plan = ?, fsst_test_plan = ?,
+      aat_requestor = ?, ftm_requestor = ?, fsst_requestor = ?, rollback_plan = ?, approval = ?, change_status = ?, cancel_change_reason = ?,
       reschedule_reason = ?, lesson_learnt = ?, ftm_schedule_change = ?, aat_schedule_change = ?,
       fsst_schedule_change = ?, latest_schedule_date = ?, ftm_it_contact = ?, aat_it_contact = ?, fsst_it_contact = ?,
-      ftm_crq = ?, aat_crq = ?, fsst_crq = ?, cancel_change_category = ?, is_someone_updating = ? WHERE id = ?;`;
+      ftm_crq = ?, aat_crq = ?, fsst_crq = ?, cancel_change_category = ?, remarks = ?, is_someone_updating = ? WHERE id = ?;`;
 
     // Handle empty objects for global_team_contact and business_team_contact
     const sanitizedGlobalTeamContact =
@@ -379,13 +371,17 @@ const updateRequest = async (req, res) => {
       priority || null,
       change_name || null,
       change_sites || null,
-      common_change || null,
-      // request_change_date || null,
+      common_change,
       achieve_2_week_change_request || null,
       sanitizedGlobalTeamContact,
       sanitizedBusinessTeamContact,
       description || null,
-      test_plan || null,
+      aat_test_plan || null,
+      ftm_test_plan || null,
+      fsst_test_plan || null,
+      aat_requestor || null,
+      ftm_requestor || null,
+      fsst_requestor || null,
       rollback_plan || null,
       approval || null,
       change_status || null,
@@ -403,6 +399,7 @@ const updateRequest = async (req, res) => {
       aat_crq || null,
       fsst_crq || null,
       cancel_change_category || null,
+      remarks || null,
       '',
       id
     ];
@@ -593,8 +590,8 @@ const deleteRequest = async (req, res) => {
           ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
           ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
           lesson_learnt, description, test_plan, rollback_plan, cancel_change_category,
-          who, updated_date, updated_field, is_deleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, TRUE);`;
+          who, updated_date, is_deleted
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), TRUE);`;
 
     await db.promise().query(migrationSQL, [
       id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,

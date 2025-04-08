@@ -111,6 +111,7 @@ const createOldChangeRequestTableQuery = `
     aat_requestor VARCHAR(101) DEFAULT NULL,
     ftm_requestor VARCHAR(101) DEFAULT NULL,
     fsst_requestor VARCHAR(101) DEFAULT NULL,
+    latest_schedule_date DATE DEFAULT NULL,
     ftm_it_contact VARCHAR(101) DEFAULT NULL,
     aat_it_contact VARCHAR(101) DEFAULT NULL,
     fsst_it_contact VARCHAR(101) DEFAULT NULL,
