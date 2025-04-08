@@ -443,7 +443,7 @@ const updateCheck = async (req, res) => {
       const currentTime = new Date();
       const timeDifference = (currentTime - lockTimestamp) / 1000 / 60; // Difference in minutes
 
-      if (timeDifference > 30) { // If lock is older than 30 minutes
+      if (timeDifference > 31) { // If lock is older than 30 minutes
         // Reset lock
         await db.promise().query("UPDATE ChangeRequest SET is_someone_updating = ?, lock_timestamp = ? WHERE id = ?", [null, null, id]);
 

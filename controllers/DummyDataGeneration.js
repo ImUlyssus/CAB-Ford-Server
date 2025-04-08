@@ -59,15 +59,42 @@ const generateDatesForMonth = (year, month) => {
     return dates;
 };
 
+// User data
+const aatUsers = [
+    { email: 'aatuser3@ford.com', name: 'aat user 3', site: 'AAT' },
+    { email: 'aatuser4@ford.com', name: 'aat user 4', site: 'AAT' },
+    { email: 'aatuser5@ford.com', name: 'aat user 5', site: 'AAT' }
+];
+
+const ftmUsers = [
+    { email: 'ftmuser3@ford.com', name: 'ftm user 3', site: 'FTM' },
+    { email: 'ftmuser4@ford.com', name: 'ftm user 4', site: 'FTM' },
+    { email: 'ftmuser5@ford.com', name: 'ftm user 5', site: 'FTM' }
+];
+
+const fsstUsers = [
+    { email: 'fsstuser3@ford.com', name: 'fsst user 3', site: 'FSST' },
+    { email: 'fsstuser4@ford.com', name: 'fsst user 4', site: 'FSST' },
+    { email: 'fsstuser5@ford.com', name: 'fsst user 5', site: 'FSST' }
+];
+
+// Function to get a random user for a specific site
+const getRandomUser = (siteUsers) => {
+    const user = getRandomElement(siteUsers);
+    return `${user.name} ${user.email}`;
+};
+
 // Function to generate dummy data and insert into the database
 const insertDummyData = async () => {
     console.log("Starting dummy data generation...");
 
+    // Add columns to the SQL query
     let sql = `INSERT INTO ChangeRequest (
-      category, reason, impact, priority, change_name, change_sites, 
-      common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request, 
-      approval, change_status, cancel_change_reason, cancel_change_category
-  ) VALUES ?`;
+        category, reason, impact, priority, change_name, change_sites, 
+        common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request, 
+        approval, change_status, cancel_change_reason, cancel_change_category,
+        aat_requestor, ftm_requestor, fsst_requestor  -- Added columns
+    ) VALUES ?`;
 
     let values = [];
 
@@ -99,10 +126,17 @@ const insertDummyData = async () => {
                     .add(Math.floor(Math.random() * 5) + 3, "days") // Add 3 to 7 days
                     .format("YYYY-MM-DD");
 
+                // Determine requestors based on change_sites
+                let aat_requestor = change_sites.includes("aat") ? getRandomUser(aatUsers) : null;
+                let ftm_requestor = change_sites.includes("ftm") ? getRandomUser(ftmUsers) : null;
+                let fsst_requestor = change_sites.includes("fsst") ? getRandomUser(fsstUsers) : null;
+
+
                 values.push([
                     category, reason, impact, priority, change_name, change_sites,
                     common_change, date, latest_schedule_date, achieve_2_week_change_request,
-                    approval, change_status, cancel_change_reason, cancel_change_category
+                    approval, change_status, cancel_change_reason, cancel_change_category,
+                    aat_requestor, ftm_requestor, fsst_requestor // Added values
                 ]);
             });
         }
@@ -117,4 +151,3 @@ const insertDummyData = async () => {
 };
 
 module.exports = insertDummyData;
-
