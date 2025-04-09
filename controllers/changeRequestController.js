@@ -310,7 +310,7 @@ const updateRequest = async (req, res) => {
     cancel_change_category,
     remarks
   } = req.body;
-
+  console.log(req.body);
   if (!id) {
     return res.status(400).json({ error: "❌ Request ID is required for updating." });
   }
@@ -388,9 +388,9 @@ const updateRequest = async (req, res) => {
       cancel_change_reason || null,
       reschedule_reason || null,
       lesson_learnt || null,
-      ftm_schedule_change ? JSON.stringify(ftm_schedule_change) : null,
-      aat_schedule_change ? JSON.stringify(aat_schedule_change) : null,
-      fsst_schedule_change ? JSON.stringify(fsst_schedule_change) : null,
+      ftm_schedule_change || null,
+      aat_schedule_change || null,
+      fsst_schedule_change || null,
       latest_schedule_date,
       ftm_it_contact || null,
       aat_it_contact || null,
