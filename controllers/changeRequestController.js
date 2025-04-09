@@ -310,7 +310,6 @@ const updateRequest = async (req, res) => {
     cancel_change_category,
     remarks
   } = req.body;
-  console.log(req.body);
   if (!id) {
     return res.status(400).json({ error: "❌ Request ID is required for updating." });
   }
@@ -585,13 +584,13 @@ const deleteRequest = async (req, res) => {
     const oldData = rows[0];
 
     const migrationSQL = `INSERT INTO OldChangeRequest (
-          original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
-          achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change,
-          ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
-          ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
-          lesson_learnt, description, test_plan, rollback_plan, cancel_change_category,
-          who, updated_date, is_deleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), TRUE);`;
+      original_id, category, reason, impact, priority, change_name, change_sites, common_change, request_change_date,
+      achieve_2_week_change_request, ftm_schedule_change, aat_schedule_change, fsst_schedule_change,
+      ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
+      ftm_crq, aat_crq, fsst_crq, approval, change_status, cancel_change_reason, reschedule_reason,
+      lesson_learnt, description, aat_test_plan, ftm_test_plan, fsst_test_plan, aat_requestor, ftm_requestor, 
+      fsst_requestor, rollback_plan, cancel_change_category, who, updated_date, remarks, is_deleted
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, TRUE);`;
 
     await db.promise().query(migrationSQL, [
       id, oldData.category, oldData.reason, oldData.impact, oldData.priority, oldData.change_name,
@@ -600,8 +599,8 @@ const deleteRequest = async (req, res) => {
       oldData.ftm_it_contact, oldData.aat_it_contact, oldData.fsst_it_contact, oldData.global_team_contact,
       oldData.business_team_contact, oldData.ftm_crq, oldData.aat_crq, oldData.fsst_crq, oldData.approval,
       oldData.change_status, oldData.cancel_change_reason, oldData.reschedule_reason, oldData.lesson_learnt,
-      oldData.description, oldData.test_plan, oldData.rollback_plan, oldData.cancel_change_category,
-      email, '', // Store the email in the 'who' column and update date
+      oldData.description, oldData.aat_test_plan, oldData.ftm_test_plan, oldData.fsst_test_plan, oldData.aat_requestor, oldData.ftm_requestor, oldData.fsst_requestor, oldData.rollback_plan, oldData.cancel_change_category,
+      email, oldData.remarks // Store the email in the 'who' column and remarks before
     ]);
 
     // Step 2: Delete the request from ChangeRequest table
@@ -619,6 +618,7 @@ const deleteRequest = async (req, res) => {
     res.status(500).json({ error: "Database error", details: err.message });
   }
 };
+
 
 // Function to get start and end dates for a selected week
 const getWeekRange = (year, month) => {
