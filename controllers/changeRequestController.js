@@ -358,10 +358,13 @@ const updateRequest = async (req, res) => {
       ftm_crq = ?, aat_crq = ?, fsst_crq = ?, cancel_change_category = ?, remarks = ?, is_someone_updating = ? WHERE id = ?;`;
 
     // Handle empty objects for global_team_contact and business_team_contact
-    const sanitizedGlobalTeamContact =
-      global_team_contact && Object.keys(global_team_contact).length > 0 ? global_team_contact : null;
-    const sanitizedBusinessTeamContact =
-      business_team_contact && Object.keys(business_team_contact).length > 0 ? business_team_contact : null;
+    const sanitizedGlobalTeamContact = Array.isArray(global_team_contact) && global_team_contact.length > 0
+  ? global_team_contact.map(item => (typeof item === 'string' ? item.trim() : item)).join(',')
+  : null;
+
+const sanitizedBusinessTeamContact = Array.isArray(business_team_contact) && business_team_contact.length > 0
+  ? business_team_contact.map(item => (typeof item === 'string' ? item.trim() : item)).join(',')
+  : null;
     // Replace undefined or null values with appropriate defaults
     const updateValues = [
       category || null,
@@ -815,8 +818,6 @@ const getThisWeekData = async (req, res) => {
     // Convert to YYYY-MM-DD format for SQL query
     const latestSaturdayStr = latestSaturday.format("YYYY-MM-DD");
     const nextFridayStr = nextFriday.format("YYYY-MM-DD");
-    // const latestSaturdayStr = '2025-02-22';
-    // const nextFridayStr = '2025-02-28';
     console.log("Latest Saturday:", latestSaturdayStr);
     console.log("Next Friday:", nextFridayStr);
 
@@ -832,7 +833,7 @@ const getThisWeekData = async (req, res) => {
     // Separate results into "approved" and "toApprove" arrays
     const approved = [];
     const toApprove = [];
-
+    console.log("from getthisweekdata", nextFridayStr);
     results.forEach(record => {
       if (moment(record.latest_schedule_date).isBefore(moment(nextFridayStr))) {
         approved.push(record);
@@ -849,4 +850,52 @@ const getThisWeekData = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData };
+const getCustomPresentationData = async (req, res) => {
+  try {
+    const { start, presentation, end } = req.query;
+
+    // Validate dates (optional, but recommended)
+    if (!start || !presentation || !end) {
+      return res.status(400).json({ error: "Start, presentation, and end dates are required." });
+    }
+
+    // Format dates to YYYY-MM-DD for SQL query
+    const formattedStartDate = moment.utc(start).format("YYYY-MM-DD");
+    const formattedPresentationDate = moment.utc(presentation).format("YYYY-MM-DD");
+    const formattedEndDate = moment.utc(end).format("YYYY-MM-DD");
+
+    // Construct the SQL query
+    const sqlQuery = `
+      SELECT * FROM ChangeRequest
+      WHERE latest_schedule_date >= ? AND latest_schedule_date <= ?
+    `;
+
+    // Execute the query
+    const [results] = await db.promise().query(sqlQuery, [formattedStartDate, formattedEndDate]);
+
+    // If no results found, return empty arrays
+    if (!results || results.length === 0) {
+      return res.json({ approved: [], toApprove: [] });
+    }
+
+    // Separate results into "approved" and "toApprove" arrays
+    const approved = [];
+    const toApprove = [];
+    results.forEach(record => {
+      if (moment(record.latest_schedule_date).isBefore(moment(formattedPresentationDate))) {
+        approved.push(record);
+      } else {
+        toApprove.push(record);
+      }
+    });
+
+    // Send response
+    res.json({ approved, toApprove });
+  } catch (error) {
+    console.error("❌ Error fetching custom date data:", error);
+    res.status(500).json({ error: "Database error", details: error.message });
+  }
+};
+
+
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData };

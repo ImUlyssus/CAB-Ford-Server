@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData } = require("../controllers/changeRequestController");
+const { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData } = require("../controllers/changeRequestController");
 
 router.post("/", createRequest);
 router.get("/", getRequests);
@@ -10,6 +10,7 @@ router.get("/get-filtered-data", getFilteredData);
 router.get("/get-four-week-data", getWeeklyData);
 router.get("/version-history", getVersionHistory);
 router.get("/custom-date", getCustomDateData);
+router.get("/custom-date-presentation", getCustomPresentationData);
 router.get('/details/:id', getVHRequestDetails);
 router.get('/get-this-week-data', getThisWeekData);
 router.put("/", updateRequest);

@@ -10,15 +10,9 @@ const sites = ["aat", "ftm", "fsst"];
 const approval = ["YES", "NO"];
 const changeStatuses = [
     '_',
-      'Completed with no issue',
-      'Cancel change request',
-      'FTM change cancel',
-      'AAT change cancel',
-      'FSST change cancel',
-      'Common change cancel',
-      'Postponed',
-      'On plan',
-      'In-progress'
+    'Completed with no issue',
+    'Ongoing',
+    'Postponed/Rejected',
 ];
 const cancelReasons = ["Reason 1", "Reason 2", "Reason 3"];
 
@@ -84,6 +78,35 @@ const getRandomUser = (siteUsers) => {
     return `${user.name} ${user.email}`;
 };
 
+// Function to generate a random schedule entry
+const generateScheduleEntry = (date) => {
+    const startDate = moment(date, "YYYY-MM-DD HH:mm:ss").format("YYYY-MM-DDTHH:mm");
+    const endDate = moment(date, "YYYY-MM-DD HH:mm:ss").add(Math.floor(Math.random() * 3) + 1, "days").format("YYYY-MM-DDTHH:mm");
+    const schedule_title = faker.lorem.words(3).replace(/ /g, "_");
+    const status = getRandomElement(["Completed_with_no_issue", "In_progress", "On_plan", "Postponed/Canceled"]);
+    const comment = faker.lorem.sentence().replace(/ /g, "_");
+    const duration = (Math.random() * 999.9).toFixed(1); // Generates a number with up to 3 integer digits and 1 decimal place
+    return `${startDate}!${endDate}!${schedule_title}!${status}!${comment}!${duration}`;
+};
+
+// Function to generate a random schedule string
+const generateScheduleString = (date) => {
+    let numEntries;
+    const randomNumber = Math.random();
+
+    if (randomNumber < 0.7) {
+        numEntries = Math.floor(Math.random() * 2); // 0 or 1 entries (70% chance)
+    } else {
+        numEntries = Math.floor(Math.random() * 8) + 2; // 2 to 9 entries (30% chance)
+    }
+
+    let schedule = [];
+    for (let i = 0; i < numEntries; i++) {
+        schedule.push(generateScheduleEntry(date));
+    }
+    return schedule.join(" ");
+};
+
 // Function to generate dummy data and insert into the database
 const insertDummyData = async () => {
     console.log("Starting dummy data generation...");
@@ -93,7 +116,7 @@ const insertDummyData = async () => {
         category, reason, impact, priority, change_name, change_sites, 
         common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request, 
         approval, change_status, cancel_change_reason, cancel_change_category,
-        aat_requestor, ftm_requestor, fsst_requestor  -- Added columns
+        aat_requestor, ftm_requestor, fsst_requestor, aat_schedule_change, ftm_schedule_change, fsst_schedule_change  -- Added columns
     ) VALUES ?`;
 
     let values = [];
@@ -131,12 +154,16 @@ const insertDummyData = async () => {
                 let ftm_requestor = change_sites.includes("ftm") ? getRandomUser(ftmUsers) : null;
                 let fsst_requestor = change_sites.includes("fsst") ? getRandomUser(fsstUsers) : null;
 
+                // Generate schedule change strings
+                let aat_schedule_change = change_sites.includes("aat") ? generateScheduleString(date) : null;
+                let ftm_schedule_change = change_sites.includes("ftm") ? generateScheduleString(date) : null;
+                let fsst_schedule_change = change_sites.includes("fsst") ? generateScheduleString(date) : null;
 
                 values.push([
                     category, reason, impact, priority, change_name, change_sites,
                     common_change, date, latest_schedule_date, achieve_2_week_change_request,
                     approval, change_status, cancel_change_reason, cancel_change_category,
-                    aat_requestor, ftm_requestor, fsst_requestor // Added values
+                    aat_requestor, ftm_requestor, fsst_requestor, aat_schedule_change, ftm_schedule_change, fsst_schedule_change // Added values
                 ]);
             });
         }
