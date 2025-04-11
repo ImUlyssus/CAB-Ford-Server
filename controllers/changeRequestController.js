@@ -896,6 +896,113 @@ const getCustomPresentationData = async (req, res) => {
     res.status(500).json({ error: "Database error", details: error.message });
   }
 };
+const getDownloadExcelData = async (req, res) => {
+  try {
+    const { start, end } = req.query; // Get date range from request
 
+    if (!start || !end) {
+      return res.status(400).json({ error: "Start and end dates are required." });
+    }
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData };
+    const sql = `
+      SELECT 
+        category, reason, impact, priority, change_name, change_sites, 
+        common_change, request_change_date, achieve_2_week_change_request, 
+        ftm_schedule_change, aat_schedule_change, fsst_schedule_change, 
+        aat_requestor, ftm_requestor, fsst_requestor, 
+        ftm_it_contact, aat_it_contact, fsst_it_contact, 
+        global_team_contact, business_team_contact, 
+        ftm_crq, aat_crq, fsst_crq, 
+        approval, change_status, cancel_change_reason, 
+        reschedule_reason, lesson_learnt, description, 
+        aat_test_plan, fsst_test_plan, ftm_test_plan, 
+        rollback_plan, remarks, cancel_change_category
+      FROM ChangeRequest 
+      WHERE request_change_date BETWEEN ? AND ?
+      ORDER BY request_change_date ASC
+    `;
+
+    const [results] = await db.promise().query(sql, [start, end]);
+
+    const processedData = results.map(row => {
+      const processScheduleChange = (schedule) => {
+        if (!schedule) return [];
+        return schedule.split(' ').map(item => {
+          const [startDate, endDate, title, status, comment, duration] = item.split('!');
+          return {
+            startDate,
+            endDate,
+            title: title.replace(/_/g, ' '),
+            status: status.replace(/_/g, ' '),
+            comment: comment.replace(/_/g, ' '),
+            duration
+          };
+        });
+      };
+
+      const processRequestorOrContact = (data) => {
+        if (!data) return null;
+        const parts = data.split(' ');
+        const email = parts.pop(); // Take the last value as email
+        const name = parts.join(' '); // Combine the remaining parts for the name
+        return { name, email };
+    };
+
+      const processCrq = (crqData) => {
+        if (!crqData) return [];
+        return crqData.split(',').map(item => {
+          const [title, crq] = item.split('!');
+          return {
+            title: title.replace(/_/g, ' '),
+            crq
+          };
+        });
+      };
+
+      return {
+        category: row.category,
+        reason: row.reason,
+        impact: row.impact,
+        priority: row.priority,
+        change_name: row.change_name,
+        change_sites: row.change_sites.replace(/,/g, ', ').toUpperCase(),
+        common_change: row.common_change == 1 ? "Yes":"No",
+        request_change_date: row.request_change_date,
+        achieve_2_week_change_request: row.achieve_2_week_change_request == 1 ? "Yes":"No",
+        ftm_schedule_change: processScheduleChange(row.ftm_schedule_change),
+        aat_schedule_change: processScheduleChange(row.aat_schedule_change),
+        fsst_schedule_change: processScheduleChange(row.fsst_schedule_change),
+        aat_requestor: processRequestorOrContact(row.aat_requestor, ['name', 'email']),
+        ftm_requestor: processRequestorOrContact(row.ftm_requestor, ['name', 'email']),
+        fsst_requestor: processRequestorOrContact(row.fsst_requestor, ['name', 'email']),
+        ftm_it_contact: processRequestorOrContact(row.ftm_it_contact, ['name', 'cdsid']),
+        aat_it_contact: processRequestorOrContact(row.aat_it_contact, ['name', 'cdsid']),
+        fsst_it_contact: processRequestorOrContact(row.fsst_it_contact, ['name', 'cdsid']),
+        global_team_contact: processRequestorOrContact(row.global_team_contact, ['position', 'name', 'cdsid']),
+        business_team_contact: processRequestorOrContact(row.business_team_contact, ['position', 'name', 'cdsid']),
+        ftm_crq: processCrq(row.ftm_crq),
+        aat_crq: processCrq(row.aat_crq),
+        fsst_crq: processCrq(row.fsst_crq),
+        approval: row.approval,
+        change_status: row.change_status,
+        cancel_change_reason: row.cancel_change_reason,
+        reschedule_reason: row.reschedule_reason,
+        lesson_learnt: row.lesson_learnt,
+        description: row.description,
+        aat_test_plan: row.aat_test_plan,
+        fsst_test_plan: row.fsst_test_plan,
+        ftm_test_plan: row.ftm_test_plan,
+        rollback_plan: row.rollback_plan,
+        remarks: row.remarks,
+        cancel_change_category: row.cancel_change_category
+      };
+    });
+
+    res.json(processedData); // Send processed data back to frontend
+  } catch (err) {
+    console.error("❌ Error fetching download excel data:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+}
+
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData, getDownloadExcelData };
