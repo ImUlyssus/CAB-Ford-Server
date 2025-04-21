@@ -82,5 +82,32 @@ const getCalendar = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+const updateCalendar = async (req, res) => {
+  const { year, calendarData } = req.body;
 
-module.exports = { getCalendar };
+  if (!year || !calendarData || !Array.isArray(calendarData)) {
+      return res.status(400).json({ error: "Invalid request body" });
+  }
+
+  try {
+      // Loop through each month in the calendarData array.
+      for (const monthData of calendarData) {
+          const { month, aat, ftm, fsst } = monthData;
+
+          // Update the database record for the corresponding month and year.
+          await db.promise().query(
+              `UPDATE BusinessCalendar
+               SET aat = ?, ftm = ?, fsst = ?
+               WHERE year = ? AND month = ?`,
+              [aat, ftm, fsst, year, month]
+          );
+      }
+
+      res.json({ message: "Calendar data updated successfully" });
+  } catch (err) {
+      console.error("❌ Error in updateCalendar:", err);
+      res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getCalendar, updateCalendar };
