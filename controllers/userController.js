@@ -89,6 +89,34 @@ const getAllUsers = async (req, res) => {
         });
     }
 };
+const resetPassword = async (req, res) => {
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+    }
 
-module.exports = { createUser, insertUser, getAllUsers };
+    try {
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update the user's password in the database
+        const [result] = await db.promise().query(
+            "UPDATE Users SET password = ? WHERE email = ?",
+            [hashedPassword, email]
+        );
+
+        // Check if any rows were affected (user found and password updated)
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "User not found with that email" });
+        }
+
+        // Respond with success message
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error("❌ Error resetting password:", error);
+        res.status(500).json({ message: "Server error, please try again later" });
+    }
+};
+
+module.exports = { createUser, insertUser, getAllUsers, resetPassword };

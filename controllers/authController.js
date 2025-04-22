@@ -51,7 +51,7 @@ const handleLogin = async (req, res) => {
             });
 
             // Send access token to user
-            res.json({ accessToken });
+            res.json({ accessToken, user: { email: foundUser.email, name: foundUser.name } });
 
         } else {
             res.sendStatus(401);  // Unauthorized
