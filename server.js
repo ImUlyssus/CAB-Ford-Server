@@ -11,6 +11,8 @@ const authRoutes = require("./routes/authRoutes");
 const tokenRefreshRoutes = require('./routes/refresh');
 const resendEmailRoute = require('./routes/resendEmail');
 const insertDummyData = require("./controllers/DummyDataGeneration");
+const informationalRoutes = require("./routes/informationalRoutes");
+
 // const credentials = require('./middleware/credentials');
 // const corsOptions = require('./config/corsOptions');
 
@@ -42,6 +44,9 @@ app.use("/api/change-requests", changeRequestRoutes);
 
 // business calendar
 app.use("/api/business-calendar", businessCalendarRoutes);
+
+// informational
+app.use("/api/informational", informationalRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

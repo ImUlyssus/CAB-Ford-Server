@@ -149,6 +149,21 @@ const createUsersTableQuery = `
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+`;
+// Table creation query for ChangeRequest
+const createInformational = `
+  CREATE TABLE IF NOT EXISTS Informational (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    startDateTime DATETIME DEFAULT NULL,
+    endDateTime DATETIME DEFAULT NULL,
+    information_name VARCHAR(300) NOT NULL,
+    change_sites VARCHAR(50) NOT NULL,
+    description VARCHAR(500) DEFAULT NULL,
+    contact VARCHAR(200) DEFAULT NULL,
+    reference VARCHAR(200) DEFAULT NULL,
+    remarks VARCHAR(300) DEFAULT NULL
+  );
 `;
 
 // Execute table creation queries using Promises
@@ -165,6 +180,10 @@ const initializeDatabase = async () => {
     // Create ChangeRequest table
     await db.promise().query(createOldChangeRequestTableQuery);
     console.log("✅ OldChangeRequest table is ready.");
+
+    // Create Informational table
+    await db.promise().query(createInformational);
+    console.log("✅ Informational table is ready.");
 
     // Create Users table
     await db.promise().query(createUsersTableQuery);
