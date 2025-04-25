@@ -14,8 +14,12 @@ const changeStatuses = [
     'Ongoing',
     'Postponed/Rejected',
 ];
-const cancelReasons = ["Reason 1", "Reason 2", "Reason 3"];
-
+const cancelReasons = [
+    'Cancel change',
+    'Postpone scheduler',
+    'Encountered error(s) during implementation',
+    'Revisit the issue and conduct a thorough analysis',
+    'Unable to contact to implementation team'];
 // Function to get random elements from an array
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 

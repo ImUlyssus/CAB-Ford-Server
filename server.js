@@ -35,7 +35,7 @@ app.use("/api/login", authRoutes)
 app.use('/api/refresh', tokenRefreshRoutes);
 app.use('/api/logout', tokenRefreshRoutes);
 app.use('/api/send-email-verification', resendEmailRoute);
-// insertDummyData();
+insertDummyData();
 app.use(verifyJWT);
 // everything under verify JWT must be authenticated to get access
 

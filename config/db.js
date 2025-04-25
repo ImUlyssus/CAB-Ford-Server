@@ -80,7 +80,13 @@ const createChangeRequestTableQuery = `
     rollback_plan VARCHAR(500) DEFAULT NULL,
     is_someone_updating VARCHAR(50) DEFAULT NULL,
     remarks VARCHAR(500) DEFAULT NULL,
-    cancel_change_category ENUM('','Reason 1','Reason 2','Reason 3') DEFAULT NULL,
+    cancel_change_category ENUM(
+    '',
+    'Cancel change',
+    'Postpone scheduler',
+    'Encountered error(s) during implementation',
+    'Revisit the issue and conduct a thorough analysis',
+    'Unable to contact to implementation team') DEFAULT NULL,
     lock_timestamp TIMESTAMP NULL
   );
 `;
@@ -129,7 +135,13 @@ const createOldChangeRequestTableQuery = `
     fsst_test_plan VARCHAR(500) DEFAULT NULL,
     ftm_test_plan VARCHAR(500) DEFAULT NULL,
     rollback_plan VARCHAR(500) DEFAULT NULL,
-    cancel_change_category ENUM('','Reason 1','Reason 2','Reason 3') DEFAULT NULL,
+    cancel_change_category ENUM(
+    '',
+    'Cancel change',
+    'Postpone scheduler',
+    'Encountered error(s) during implementation',
+    'Revisit the issue and conduct a thorough analysis',
+    'Unable to contact to implementation team') DEFAULT NULL,
     remarks VARCHAR(500) DEFAULT NULL,
     who VARCHAR(50) DEFAULT NULL,
     updated_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
