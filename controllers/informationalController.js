@@ -11,6 +11,7 @@ const createInformational = async (req, res) => {
             remarks,
             startDateTime,
             endDateTime,
+            date
         } = req.body;
         console.log(change_sites)
         // Validate required fields
@@ -31,8 +32,9 @@ const createInformational = async (req, res) => {
                 reference,
                 remarks,
                 startDateTime,
-                endDateTime
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                endDateTime,
+                date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         // Execute the query
@@ -45,6 +47,7 @@ const createInformational = async (req, res) => {
             remarks,
             startDateTime,
             endDateTime,
+            date,
         ]);
 
         // Get the ID of the newly inserted row
@@ -64,4 +67,57 @@ const createInformational = async (req, res) => {
     }
 };
 
-module.exports = { createInformational };
+const getInformational = async (req, res) => {
+    try {
+        const { date } = req.query; // Get the date from the query parameters
+
+        if (!date) {
+            return res.status(400).json({ message: "Date parameter is required." });
+        }
+
+        const query = `
+            SELECT * FROM Informational
+            WHERE DATE(date) = ?
+        `;
+
+        const [results] = await db.promise().query(query, [date]);
+
+        res.status(200).json(results);
+    } catch (error) {
+        console.error("Error fetching informational data:", error);
+        res.status(500).json({ message: "Failed to fetch informational data." });
+    }
+};
+
+const deleteInformational = async (req, res) => {
+    try {
+        const { id } = req.params; // Get the ID from the request parameters
+
+        // Validate the ID
+        if (!id) {
+            return res.status(400).json({ message: "ID parameter is required." });
+        }
+
+        // Construct the SQL query
+        const query = `
+            DELETE FROM Informational
+            WHERE id = ?
+        `;
+
+        // Execute the query
+        const [result] = await db.promise().query(query, [id]);
+
+        // Check if any rows were affected
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Informational item not found." });
+        }
+
+        // Send success message
+        res.status(200).json({ message: "Informational item deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting informational item:", error);
+        res.status(500).json({ message: "Failed to delete informational item." });
+    }
+};
+
+module.exports = { createInformational, getInformational, deleteInformational };

@@ -162,7 +162,8 @@ const createInformational = `
     description VARCHAR(500) DEFAULT NULL,
     contact VARCHAR(200) DEFAULT NULL,
     reference VARCHAR(200) DEFAULT NULL,
-    remarks VARCHAR(300) DEFAULT NULL
+    remarks VARCHAR(300) DEFAULT NULL,
+    date DATE DEFAULT NULL
   );
 `;
 
