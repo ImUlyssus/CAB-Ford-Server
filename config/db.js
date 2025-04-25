@@ -167,6 +167,18 @@ const createInformational = `
   );
 `;
 
+// Table creation query for ChangeRequest
+const createPresentationRemarkSummary = `
+  CREATE TABLE IF NOT EXISTS SummaryRemarks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    common_remark VARCHAR(300) NOT NULL,
+    aat_remark VARCHAR(300) NOT NULL,
+    ftm_remark VARCHAR(300) NOT NULL,
+    fsst_remark VARCHAR(300) NOT NULL,
+    date DATE DEFAULT NULL
+  );
+`;
+
 // Execute table creation queries using Promises
 const initializeDatabase = async () => {
   try {
@@ -185,6 +197,10 @@ const initializeDatabase = async () => {
     // Create Informational table
     await db.promise().query(createInformational);
     console.log("✅ Informational table is ready.");
+
+    // Create Informational table
+    await db.promise().query(createPresentationRemarkSummary);
+    console.log("✅ SummaryRemarks table is ready.");
 
     // Create Users table
     await db.promise().query(createUsersTableQuery);
