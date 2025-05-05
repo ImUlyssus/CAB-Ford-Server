@@ -115,6 +115,50 @@ const createRequest = async (req, res) => {
     res.status(500).json({ error: "Database error", details: err.message });
   }
 };
+const updateApproval = async (req, res) => {
+  // Destructure only the fields we expect from the frontend request
+  const { id, approval } = req.body;
+
+  // Basic validation: Ensure both id and approval are provided
+  if (!id) {
+    return res.status(400).json({ error: "❌ Request ID is required for updating approval." });
+  }
+   if (!approval) {
+    return res.status(400).json({ error: "❌ Approval value is required." });
+  }
+
+  // Validation to ensure approval is one of the allowed values
+  const allowedApprovals = ['YES', 'NO', 'Waiting'];
+  if (!allowedApprovals.includes(approval)) {
+       return res.status(400).json({ error: `❌ Invalid approval value: ${approval}. Must be one of ${allowedApprovals.join(', ')}.` });
+  }
+
+
+  try {
+    // Construct a simple SQL query to update only the 'approval' column
+    const updateSQL = `
+      UPDATE ChangeRequest
+      SET approval = ?
+      WHERE id = ?;
+    `;
+
+    // Execute the update query
+    const [result] = await db.promise().query(updateSQL, [approval, id]);
+
+    // Check if any row was actually updated
+    if (result.affectedRows === 0) {
+       return res.status(404).json({ error: "❌ Change Request not found or approval value is already the same." });
+    }
+
+    // Send a success response
+    res.status(200).json({ message: `✅ Approval for request ${id} successfully updated to ${approval}.` });
+
+  } catch (err) {
+    // Handle database or other server errors
+    console.error("❌ Database error updating approval:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
+  }
+};
 
 
 // Get all change requests
@@ -1005,4 +1049,4 @@ const getDownloadExcelData = async (req, res) => {
   }
 }
 
-module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData, getDownloadExcelData };
+module.exports = { createRequest, getRequests, updateRequest, deleteRequest, getRequestsForTwoYears, getRequestsForChosenYear, getFilteredData, getWeeklyData, updateCheck, forceUpdateRequest, getCustomDateData, getVersionHistory, getVHRequestDetails, goBackUpdate, getThisWeekData, getCustomPresentationData, getDownloadExcelData, updateApproval };
