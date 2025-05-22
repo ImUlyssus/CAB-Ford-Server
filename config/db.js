@@ -77,7 +77,9 @@ const createChangeRequestTableQuery = `
     aat_test_plan VARCHAR(500) DEFAULT NULL,
     fsst_test_plan VARCHAR(500) DEFAULT NULL,
     ftm_test_plan VARCHAR(500) DEFAULT NULL,
-    rollback_plan VARCHAR(500) DEFAULT NULL,
+    aat_rollback_plan VARCHAR(500) DEFAULT NULL,
+    ftm_rollback_plan VARCHAR(500) DEFAULT NULL,
+    fsst_rollback_plan VARCHAR(500) DEFAULT NULL,
     is_someone_updating VARCHAR(50) DEFAULT NULL,
     remarks VARCHAR(500) DEFAULT NULL,
     cancel_change_category ENUM(
@@ -134,7 +136,9 @@ const createOldChangeRequestTableQuery = `
     aat_test_plan VARCHAR(500) DEFAULT NULL,
     fsst_test_plan VARCHAR(500) DEFAULT NULL,
     ftm_test_plan VARCHAR(500) DEFAULT NULL,
-    rollback_plan VARCHAR(500) DEFAULT NULL,
+    aat_rollback_plan VARCHAR(500) DEFAULT NULL,
+    ftm_rollback_plan VARCHAR(500) DEFAULT NULL,
+    fsst_rollback_plan VARCHAR(500) DEFAULT NULL,
     cancel_change_category ENUM(
     '',
     'Cancel change',

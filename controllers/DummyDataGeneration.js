@@ -2,24 +2,41 @@ const db = require("../config/db"); // Import your database connection
 const { faker } = require("@faker-js/faker");
 const moment = require('moment-timezone');
 // Define ENUM values for randomization
+const {
+    change_names,
+    descriptions,
+    test_plans,
+    rollback_plans,
+    contacts,
+    global_and_business_contacts, // Added this import
+    crqs,
+    scheduleTitles,
+    scheduleComments
+} = require('./DummyText');
+
+// Define ENUM values for randomization
 const categories = ["Hardware", "Application", "New tech update", "Password reset"];
 const reasons = ["Fix/Repair", "New functionality", "Maintenance", "Upgrade", "Tech refresh", "Yearly change"];
 const impacts = ["Extensive", "Significant", "Moderate", "Minor"];
 const priorities = ["Critical", "High", "Medium", "Low"];
 const sites = ["aat", "ftm", "fsst"];
-const approval = ["YES", "NO"];
+// Update approval to include 'Waiting' as per your database schema and frontend logic
+const approvalOptions = ["YES", "NO", "Waiting"];
 const changeStatuses = [
     '_',
     'Completed with no issue',
     'Ongoing',
     'Postponed/Rejected',
 ];
-const cancelReasons = [
+const cancelCategories = [ // Renamed from cancelReasons to match database column name
+    '', // Added empty string for the default/NULL case
     'Cancel change',
     'Postpone scheduler',
     'Encountered error(s) during implementation',
     'Revisit the issue and conduct a thorough analysis',
-    'Unable to contact to implementation team'];
+    'Unable to contact to implementation team'
+];
+
 // Function to get random elements from an array
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
@@ -57,7 +74,7 @@ const generateDatesForMonth = (year, month) => {
     return dates;
 };
 
-// User data
+// User data (Keeping this as it's used for requestor fields, not contacts)
 const aatUsers = [
     { email: 'aatuser3@ford.com', name: 'aat user 3', site: 'AAT' },
     { email: 'aatuser4@ford.com', name: 'aat user 4', site: 'AAT' },
@@ -79,6 +96,7 @@ const fsstUsers = [
 // Function to get a random user for a specific site
 const getRandomUser = (siteUsers) => {
     const user = getRandomElement(siteUsers);
+    // Format as "name email"
     return `${user.name} ${user.email}`;
 };
 
@@ -86,23 +104,18 @@ const getRandomUser = (siteUsers) => {
 const generateScheduleEntry = (date) => {
     const startDate = moment(date, "YYYY-MM-DD HH:mm:ss").format("YYYY-MM-DDTHH:mm");
     const endDate = moment(date, "YYYY-MM-DD HH:mm:ss").add(Math.floor(Math.random() * 3) + 1, "days").format("YYYY-MM-DDTHH:mm");
-    const schedule_title = faker.lorem.words(3).replace(/ /g, "_");
+    // Use imported scheduleTitles and scheduleComments, keep underscore replacement if needed for your parsing
+    const schedule_title = getRandomElement(scheduleTitles).replace(/ /g, "_");
     const status = getRandomElement(["Completed_with_no_issue", "In_progress", "On_plan", "Postponed/Canceled"]);
-    const comment = faker.lorem.sentence().replace(/ /g, "_");
-    const duration = (Math.random() * 999.9).toFixed(1); // Generates a number with up to 3 integer digits and 1 decimal place
+    const comment = getRandomElement(scheduleComments).replace(/ /g, "_"); // Use imported comments
+    const duration = (Math.random() * 999.9).toFixed(1);
     return `${startDate}!${endDate}!${schedule_title}!${status}!${comment}!${duration}`;
 };
 
-// Function to generate a random schedule string
+// Function to generate a random schedule string (1 to 3 entries)
 const generateScheduleString = (date) => {
-    let numEntries;
-    const randomNumber = Math.random();
-
-    if (randomNumber < 0.7) {
-        numEntries = Math.floor(Math.random() * 2); // 0 or 1 entries (70% chance)
-    } else {
-        numEntries = Math.floor(Math.random() * 8) + 2; // 2 to 9 entries (30% chance)
-    }
+    // Generate a random number of entries between 1 and 3
+    const numEntries = Math.floor(Math.random() * 3) + 1; // Generates 1, 2, or 3
 
     let schedule = [];
     for (let i = 0; i < numEntries; i++) {
@@ -115,12 +128,16 @@ const generateScheduleString = (date) => {
 const insertDummyData = async () => {
     console.log("Starting dummy data generation...");
 
-    // Add columns to the SQL query
+    // Add all relevant columns to the SQL query
     let sql = `INSERT INTO ChangeRequest (
-        category, reason, impact, priority, change_name, change_sites, 
-        common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request, 
+        category, reason, impact, priority, change_name, change_sites,
+        common_change, request_change_date, latest_schedule_date, achieve_2_week_change_request,
         approval, change_status, cancel_change_reason, cancel_change_category,
-        aat_requestor, ftm_requestor, fsst_requestor, aat_schedule_change, ftm_schedule_change, fsst_schedule_change  -- Added columns
+        aat_requestor, ftm_requestor, fsst_requestor,
+        aat_schedule_change, ftm_schedule_change, fsst_schedule_change,
+        description, aat_test_plan, ftm_test_plan, fsst_test_plan, rollback_plan,
+        ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
+        ftm_crq, aat_crq, fsst_crq
     ) VALUES ?`;
 
     let values = [];
@@ -128,7 +145,7 @@ const insertDummyData = async () => {
     // Loop through months from Jan 2023 to Feb 2025
     for (let year = 2023; year <= 2025; year++) {
         for (let month = 1; month <= 12; month++) {
-            if (year === 2025 && month > 11) break; // Stop after Feb 2025
+            if (year === 2025 && month > 5) break; // Stop after Feb 2025 (Changed from 11 to 2)
 
             let requestDates = generateDatesForMonth(year, month);
 
@@ -137,37 +154,65 @@ const insertDummyData = async () => {
                 let reason = getRandomElement(reasons);
                 let impact = getRandomElement(impacts);
                 let priority = getRandomElement(priorities);
-                let change_name = faker.lorem.words(5);
+                // Use imported change_names
+                let change_name = getRandomElement(change_names);
                 let change_sites = getRandomSites();
-                let common_change = change_sites.includes(",") ? true : false;
-                let achieve_2_week_change_request = Math.random() < 0.3; // 70% false, 30% true
-                let approval = Math.random() < 0.8 ? "YES" : "NO"; // 80% YES
+                let common_change = change_sites.includes(",");
+                let achieve_2_week_change_request = Math.random() < 0.3;
+                // Use imported approvalOptions
+                let approval = getRandomElement(approvalOptions);
                 let change_status = approval === "YES"
                     ? getRandomElement(["Completed with no issue", "_"])
                     : getRandomElement(changeStatuses.filter(s => s !== "Completed with no issue"));
-                let cancel_change_reason = change_status !== "Completed with no issue" ? faker.lorem.sentence() : null;
-                let cancel_change_category = change_status !== "Completed with no issue" ? getRandomElement(cancelReasons) : null;
+                // Use imported scheduleComments for cancel reason if status is not completed
+                let cancel_change_reason = change_status !== "Completed with no issue" ? getRandomElement(scheduleComments) : null;
+                // Use imported cancelCategories
+                let cancel_change_category = change_status !== "Completed with no issue" ? getRandomElement(cancelCategories) : null;
 
-                // Generate latest_schedule_date (randomized 3 to 7 days after request date)
+
                 let latest_schedule_date = moment(date, "YYYY-MM-DD HH:mm:ss")
-                    .add(Math.floor(Math.random() * 5) + 3, "days") // Add 3 to 7 days
+                    .add(Math.floor(Math.random() * 5) + 3, "days")
                     .format("YYYY-MM-DD");
 
-                // Determine requestors based on change_sites
                 let aat_requestor = change_sites.includes("aat") ? getRandomUser(aatUsers) : null;
                 let ftm_requestor = change_sites.includes("ftm") ? getRandomUser(ftmUsers) : null;
                 let fsst_requestor = change_sites.includes("fsst") ? getRandomUser(fsstUsers) : null;
 
-                // Generate schedule change strings
                 let aat_schedule_change = change_sites.includes("aat") ? generateScheduleString(date) : null;
                 let ftm_schedule_change = change_sites.includes("ftm") ? generateScheduleString(date) : null;
                 let fsst_schedule_change = change_sites.includes("fsst") ? generateScheduleString(date) : null;
+
+                // Use imported arrays for description, test plans, rollback plan, contacts, and CRQs
+                let description = getRandomElement(descriptions);
+                let rollback_plan = getRandomElement(rollback_plans);
+
+                // Site-specific test plans using the general test_plans array
+                let aat_test_plan = change_sites.includes("aat") ? getRandomElement(test_plans) : null;
+                let ftm_test_plan = change_sites.includes("ftm") ? getRandomElement(test_plans) : null;
+                let fsst_test_plan = change_sites.includes("fsst") ? getRandomElement(test_plans) : null;
+
+                // Site-specific and general contacts using the contacts array
+                let aat_it_contact = change_sites.includes("aat") ? getRandomElement(contacts) : null;
+                let ftm_it_contact = change_sites.includes("ftm") ? getRandomElement(contacts) : null;
+                let fsst_it_contact = change_sites.includes("fsst") ? getRandomElement(contacts) : null;
+                let global_team_contact = getRandomElement(global_and_business_contacts); // Always generate a global contact
+                let business_team_contact = getRandomElement(global_and_business_contacts); // Always generate a business contact
+
+                // Site-specific CRQs using the crqs array
+                let aat_crq = change_sites.includes("aat") ? getRandomElement(crqs) : null;
+                let ftm_crq = change_sites.includes("ftm") ? getRandomElement(crqs) : null;
+                let fsst_crq = change_sites.includes("fsst") ? getRandomElement(crqs) : null;
+
 
                 values.push([
                     category, reason, impact, priority, change_name, change_sites,
                     common_change, date, latest_schedule_date, achieve_2_week_change_request,
                     approval, change_status, cancel_change_reason, cancel_change_category,
-                    aat_requestor, ftm_requestor, fsst_requestor, aat_schedule_change, ftm_schedule_change, fsst_schedule_change // Added values
+                    aat_requestor, ftm_requestor, fsst_requestor,
+                    aat_schedule_change, ftm_schedule_change, fsst_schedule_change,
+                    description, aat_test_plan, ftm_test_plan, fsst_test_plan, rollback_plan,
+                    ftm_it_contact, aat_it_contact, fsst_it_contact, global_team_contact, business_team_contact,
+                    ftm_crq, aat_crq, fsst_crq
                 ]);
             });
         }
